@@ -1,6 +1,21 @@
 package pexels_test
 
-var testCases = []struct {
+import "github.com/JayMonari/go-pexels"
+
+var clientNewTestCases = []struct {
+	expectErr bool
+	options   pexels.Options
+}{
+	{true,
+		pexels.Options{}, // No API key
+	},
+	{
+		false,
+		pexels.Options{APIKey: "pexels-api-key"},
+	},
+}
+
+var responseTestCases = []struct {
 	description string
 	value       string
 	want        int

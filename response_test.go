@@ -19,7 +19,7 @@ func newTestResponseCommon(n, v string) pexels.ResponseCommon {
 }
 
 func TestGetRateReset(t *testing.T) {
-	for _, tt := range testCases {
+	for _, tt := range responseTestCases {
 		rc := newTestResponseCommon("X-Ratelimit-Reset", tt.value)
 		if got := rc.GetRateLimitReset(); got != tt.want {
 			t.Errorf(msg, tt.description, got, tt.want)
@@ -29,7 +29,7 @@ func TestGetRateReset(t *testing.T) {
 }
 
 func TestGetRateRemaining(t *testing.T) {
-	for _, tt := range testCases {
+	for _, tt := range responseTestCases {
 		rc := newTestResponseCommon("X-Ratelimit-Remaining", tt.value)
 		if got := rc.GetRateLimitRemaining(); got != tt.want {
 			t.Errorf(msg, tt.description, got, tt.want)
@@ -39,7 +39,7 @@ func TestGetRateRemaining(t *testing.T) {
 }
 
 func TestGetRateLimit(t *testing.T) {
-	for _, tt := range testCases {
+	for _, tt := range responseTestCases {
 		rc := newTestResponseCommon("X-Ratelimit-Limit", tt.value)
 		if got := rc.GetRateLimit(); got != tt.want {
 			t.Errorf(msg, tt.description, got, tt.want)
