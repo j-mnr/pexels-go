@@ -8,17 +8,20 @@ import (
 const videoPath = "/videos"
 
 type Video struct {
-	ID            uint64         `json:"id"`
-	Width         uint16         `json:"width"`
-	Height        uint16         `json:"height"`
-	URL           string         `json:"url"`
-	Image         string         `json:"image"`
-	Duration      uint16         `json:"duration"` // In seconds
-	User          PexelUser      `json:"user"`
-	VideoFiles    []VideoFile    `json:"video_files"`
-	VideoPictures []VideoPicture `json:"video_pictures"`
-	// TODO Type          CollectionMediaType `json:"type,omitempty"`
+	ID            uint64              `json:"id"`
+	Width         uint16              `json:"width"`
+	Height        uint16              `json:"height"`
+	URL           string              `json:"url"`
+	Image         string              `json:"image"`
+	Duration      uint16              `json:"duration"` // In seconds
+	User          PexelUser           `json:"user"`
+	VideoFiles    []VideoFile         `json:"video_files"`
+	VideoPictures []VideoPicture      `json:"video_pictures"`
+	Type          CollectionMediaType `json:"type,omitempty"`
 }
+
+func (v *Video) isMedia()
+func (v *Video) MediaType() string { return videoType }
 
 type VideoResponse struct {
 	Common ResponseCommon

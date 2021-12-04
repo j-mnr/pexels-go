@@ -8,18 +8,21 @@ import (
 const photoPath = "/v1"
 
 type Photo struct {
-	ID              uint64 `json:"id"`
-	Width           uint16 `json:"width"`
-	Height          uint16 `json:"height"`
-	URL             string `json:"url"`
-	Photographer    string `json:"photographer"`
-	PhotographerURL string `json:"photographer_url"`
-	PhotographerID  uint64 `json:"photographer_id"`
-	AvgColor        string `json:"avg_color"` // e.g. #978E82
-	// TODO Type            CollectionMediaType `json:"type,omitempty"`
-	Src   PhotoSource `json:"src"`   // URLs of images
-	Liked bool        `json:"liked"` // Optional
+	ID              uint64              `json:"id"`
+	Width           uint16              `json:"width"`
+	Height          uint16              `json:"height"`
+	URL             string              `json:"url"`
+	Photographer    string              `json:"photographer"`
+	PhotographerURL string              `json:"photographer_url"`
+	PhotographerID  uint64              `json:"photographer_id"`
+	AvgColor        string              `json:"avg_color"`
+	Type            CollectionMediaType `json:"type,omitempty"`
+	Src             PhotoSource         `json:"src"`
+	Liked           bool                `json:"liked"` // Optional
 }
+
+func (p *Photo) isMedia()
+func (p *Photo) MediaType() string { return photoType }
 
 type PhotoResponse struct {
 	Common ResponseCommon
@@ -108,7 +111,7 @@ func (c *Client) GetCuratedPhotos(params *CuratedPhotosParams) (PhotosResponse, 
 	return ppr, nil
 }
 
-func (c *Client) Search(params *SearchPhotosParams) (PhotosResponse, error) {
+func (c *Client) SearchPhotos(params *SearchPhotosParams) (PhotosResponse, error) {
 	if params == nil || params.Query == "" {
 		return PhotosResponse{}, errors.New("query is required")
 	}
