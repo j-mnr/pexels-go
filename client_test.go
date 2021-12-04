@@ -1,18 +1,21 @@
 package pexels_test
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/JayMonari/go-pexels"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 type mockHTTPClient struct {
 	mockHandler http.HandlerFunc
 }
 
-func newMockHTTPClient(options *pexels.Options, mockHandler http.HandlerFunc) *pexels.Client {
+func newMockClient(options *pexels.Options, mockHandler http.HandlerFunc) *pexels.Client {
 	c, _ := pexels.New(pexels.Options{HTTPClient: &mockHTTPClient{mockHandler}})
 	return c
 }
@@ -45,5 +48,41 @@ func TestNew(t *testing.T) {
 		} else if tc.expectErr {
 			continue
 		}
+	}
+}
+
+type badMockHTTPClient struct {
+	mockHandler http.HandlerFunc
+}
+
+func (mtc *badMockHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	return nil, errors.New("ERROR: badMockHTTPClient")
+}
+
+func TestFailedHTTPClientDoRequest(t *testing.T) {
+	t.Parallel()
+	options := pexels.Options{
+		APIKey:     "testAPIKey",
+		HTTPClient: &badMockHTTPClient{newMockHandler(0, "", nil)},
+	}
+	c, _ := pexels.New(options)
+
+	_, err := c.GetPhoto(12345)
+	if err == nil {
+		t.Error("expected error but got nil")
+	}
+	if err.Error() != "BIG OOF dawg, looks like we found an error" {
+		t.Error("expected error does match return error")
+	}
+}
+
+func TestDecodingBadJSON(t *testing.T) {
+	t.Parallel()
+
+	c := newMockClient(&pexels.Options{APIKey: "testAPIKey"},
+		newMockHandler(http.StatusOK, `data":["key":"value"]}`, nil))
+	_, err := c.GetPhoto(12345)
+	if err == nil {
+		t.Error("expected error but got nil")
 	}
 }
