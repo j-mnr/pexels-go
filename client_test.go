@@ -7,16 +7,15 @@ import (
 	"testing"
 
 	"github.com/JayMonari/go-pexels"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 type mockHTTPClient struct {
 	mockHandler http.HandlerFunc
 }
 
-func newMockClient(options *pexels.Options, mockHandler http.HandlerFunc) *pexels.Client {
-	c, _ := pexels.New(pexels.Options{HTTPClient: &mockHTTPClient{mockHandler}})
+func newMockClient(opt pexels.Options, mockHandler http.HandlerFunc) *pexels.Client {
+	opt.HTTPClient = &mockHTTPClient{mockHandler: mockHandler}
+	c, _ := pexels.New(opt)
 	return c
 }
 
@@ -79,7 +78,7 @@ func TestFailedHTTPClientDoRequest(t *testing.T) {
 func TestDecodingBadJSON(t *testing.T) {
 	t.Parallel()
 
-	c := newMockClient(&pexels.Options{APIKey: "testAPIKey"},
+	c := newMockClient(pexels.Options{APIKey: "testAPIKey"},
 		newMockHandler(http.StatusOK, `data":["key":"value"]}`, nil))
 	_, err := c.GetPhoto(12345)
 	if err == nil {

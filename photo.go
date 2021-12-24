@@ -21,7 +21,7 @@ type Photo struct {
 	Liked           bool                `json:"liked"` // Optional
 }
 
-func (p *Photo) isMedia()
+func (p *Photo) isMedia()          {}
 func (p *Photo) MediaType() string { return photoType }
 
 type PhotoResponse struct {
@@ -87,8 +87,8 @@ const (
 )
 
 // GetPhoto retrieves a photo by its ID
-func (c *Client) GetPhoto(ID int) (PhotoResponse, error) {
-	resp, err := c.get(fmt.Sprintf("%s/%s/%d", photoPath, "photos", ID), nil, &Photo{})
+func (c *Client) GetPhoto(id int) (PhotoResponse, error) {
+	resp, err := c.get(fmt.Sprintf("%s/%s/%d", photoPath, "photos", id), nil, &Photo{})
 	if err != nil {
 		return PhotoResponse{}, err
 	}

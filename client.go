@@ -37,7 +37,6 @@ func New(options Options) (*Client, error) {
 	} else if options.HTTPClient == nil {
 		options.HTTPClient = http.DefaultClient
 	}
-
 	options.baseURL = APIBaseURL
 	return &Client{opts: options}, nil
 }
@@ -139,6 +138,25 @@ func buildQueryString(req *http.Request, v interface{}) (string, error) {
 	}
 
 	return query.Encode(), nil
+}
+
+func decodeMediaFromRawMessage(rawMsg []byte) (Media, error) {
+	var typeData struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(rawMsg, &typeData); err != nil {
+		return nil, err
+	}
+	var m Media
+	switch typeData.Type {
+	case videoType:
+		m = &Video{}
+	case photoType:
+		m = &Photo{}
+	default:
+		return nil, errors.New("unknown type: " + typeData.Type)
+	}
+	return m, nil
 }
 
 func isZero(v interface{}) (bool, error) {

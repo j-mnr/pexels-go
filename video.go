@@ -20,7 +20,7 @@ type Video struct {
 	Type          CollectionMediaType `json:"type,omitempty"`
 }
 
-func (v *Video) isMedia()
+func (v *Video) isMedia()          {}
 func (v *Video) MediaType() string { return videoType }
 
 type VideoResponse struct {
@@ -69,7 +69,7 @@ type PopularVideoParams struct {
 	PerPage     uint8  `query:"per_page,15"` // Max: 80
 }
 
-type VideoSearchParams struct {
+type SearchVideoParams struct {
 	Query string `query:"query"` // Required
 
 	// Optional parameters
@@ -88,8 +88,8 @@ type PexelUser struct {
 	URL  string `json:"url"`
 }
 
-func (c *Client) GetVideo(videoID int) (VideoResponse, error) {
-	resp, err := c.get(fmt.Sprintf("%s/videos/%d", videoPath, videoID), "", &Video{})
+func (c *Client) GetVideo(id int) (VideoResponse, error) {
+	resp, err := c.get(fmt.Sprintf("%s/videos/%d", videoPath, id), "", &Video{})
 	if err != nil {
 		return VideoResponse{}, err
 	}
@@ -112,7 +112,7 @@ func (c *Client) GetPopularVideos(params *PopularVideoParams) (VideosResponse,
 	return popResp, nil
 }
 
-func (c *Client) SearchVideos(params *VideoSearchParams) (VideosResponse,
+func (c *Client) SearchVideos(params *SearchVideoParams) (VideosResponse,
 	error) {
 
 	if params == nil || params.Query == "" {

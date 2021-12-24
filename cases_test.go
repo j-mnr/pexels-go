@@ -6,7 +6,8 @@ var clientNewTestCases = []struct {
 	expectErr bool
 	options   pexels.Options
 }{
-	{true,
+	{
+		true,
 		pexels.Options{}, // No API key
 	},
 	{
