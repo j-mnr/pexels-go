@@ -6,20 +6,20 @@ The unofficial Pexels API client written in Go.
 
 ### Photo Endpoints
 
-- [ ] Search Photos
-- [ ] Get Curated Photos
-- [ ] Get Photo by ID
+- [x] Search Photos
+- [x] Get Curated Photos
+- [x] Get Photo by ID
 
 ### Video Endpoints
 
-- [ ] Search Videos
-- [ ] Get Popular Videos
-- [ ] Search Videos
+- [x] Search Videos
+- [x] Get Popular Videos
+- [x] Search Videos
 
 ### Collection Endpoints
 
-- [ ] Get User's Collection
-- [ ] Get User's Collections
+- [x] Get User's Collection
+- [x] Get User's Collections
 
 ## License
 
