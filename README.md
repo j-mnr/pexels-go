@@ -2,8 +2,6 @@
 
 The unofficial Pexels API client written in Go (Golang).
 
-[![Coverage Status](https://coveralls.io/repos/github/stron-jay/pexels-go/badge.svg?branch=main)](https://coveralls.io/github/stron-jay/pexels-go?branch=main)
-
 ## Supported Endpoints & Features
 
 ### Photo Endpoints
@@ -27,7 +25,9 @@ The unofficial Pexels API client written in Go (Golang).
 
 You will need to request an API key from
 [Pexels](https://www.pexels.com/api/new/)
-You can copy and paste this into your terminal to for a quick example.
+
+Set an environment variable `PEXELS_API_KEY` to your received API key.
+Copy and paste this code snippet into terminal for a quick example.
 
 ```sh
 mkdir temp && cd temp
