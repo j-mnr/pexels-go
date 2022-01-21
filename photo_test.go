@@ -1,12 +1,10 @@
-package pexels_test
+package pexels
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"testing"
 
-	"github.com/JayMonari/go-pexels"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -15,19 +13,19 @@ func TestGetPhoto(t *testing.T) {
 
 	tcs := []struct {
 		statusCode int
-		opts       pexels.Options
-		ID         int
+		opts       *Options
+		ID         uint64
 		respBody   string
 	}{
 		{
 			http.StatusOK,
-			pexels.Options{APIKey: "testAPIKey"},
+			&Options{APIKey: "testAPIKey"},
 			2014422,
 			`{"id":2014422,"width":3024,"height":3024,"url":"https://www.pexels.com/photo/brown-rocks-during-golden-hour-2014422/","photographer":"Joey Farina","photographer_url":"https://www.pexels.com/@joey","photographer_id":680589,"avg_color":"#978E82","src":{"original":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg","large2x":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress\u0026cs=tinysrgb\u0026dpr=2\u0026h=650\u0026w=940","large":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=650\u0026w=940","medium":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=350","small":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=130","portrait":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress\u0026cs=tinysrgb\u0026fit=crop\u0026h=1200\u0026w=800","landscape":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress\u0026cs=tinysrgb\u0026fit=crop\u0026h=627\u0026w=1200","tiny":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress\u0026cs=tinysrgb\u0026dpr=1\u0026fit=crop\u0026h=200\u0026w=280"},"liked":false}`,
 		},
 		{
 			http.StatusNotFound,
-			pexels.Options{APIKey: "testAPIKey"},
+			&Options{APIKey: "testAPIKey"},
 			0,
 			`{"status":404,"error":"Not Found"}`,
 		},
@@ -35,7 +33,6 @@ func TestGetPhoto(t *testing.T) {
 	for _, tc := range tcs {
 		c := newMockClient(tc.opts,
 			newMockHandler(tc.statusCode, tc.respBody, nil))
-		fmt.Println("CLIENT: ", c)
 		aResp, err := c.GetPhoto(tc.ID)
 		if err != nil {
 			t.Error(err)
@@ -43,7 +40,7 @@ func TestGetPhoto(t *testing.T) {
 		if aResp := aResp.Common.StatusCode; aResp != tc.statusCode {
 			t.Errorf("expected status code %d, got %d", tc.statusCode, aResp)
 		}
-		ePhoto := pexels.Photo{}
+		ePhoto := Photo{}
 		json.Unmarshal([]byte(tc.respBody), &ePhoto)
 		if aResp.Photo != ePhoto {
 			t.Errorf("expected photo %v, got %v", ePhoto, aResp.Photo)
@@ -56,14 +53,14 @@ func TestGetCuratedPhotos(t *testing.T) {
 
 	tcs := []struct {
 		statusCode int
-		opts       pexels.Options
-		params     *pexels.CuratedPhotosParams
+		opts       *Options
+		params     *CuratedPhotosParams
 		respBody   string
 	}{
 		{
 			http.StatusOK,
-			pexels.Options{APIKey: "testAPIKey"},
-			&pexels.CuratedPhotosParams{Page: 2, PerPage: 5},
+			&Options{APIKey: "testAPIKey"},
+			&CuratedPhotosParams{Page: 2, PerPage: 5},
 			`{"page":2,"per_page":5,"photos":[{"id":8536867,"width":4291,"height":5364,"url":"https://www.pexels.com/photo/silhouette-of-man-raising-his-hands-8536867/","photographer":"Trarete","photographer_url":"https://www.pexels.com/@trarete-73723862","photographer_id":73723862,"avg_color":"#405580","src":{"original":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg","large2x":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg?auto=compress\u0026cs=tinysrgb\u0026dpr=2\u0026h=650\u0026w=940","large":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=650\u0026w=940","medium":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=350","small":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=130","portrait":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg?auto=compress\u0026cs=tinysrgb\u0026fit=crop\u0026h=1200\u0026w=800","landscape":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg?auto=compress\u0026cs=tinysrgb\u0026fit=crop\u0026h=627\u0026w=1200","tiny":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg?auto=compress\u0026cs=tinysrgb\u0026dpr=1\u0026fit=crop\u0026h=200\u0026w=280"},"liked":false}],"total_results":8000,"next_page":"https://api.pexels.com/v1/curated/?page=3\u0026per_page=5","prev_page":"https://api.pexels.com/v1/curated/?page=1\u0026per_page=5"}`,
 		},
 	}
@@ -83,7 +80,7 @@ func TestGetCuratedPhotos(t *testing.T) {
 				aResp.Payload.PerPage, tc.params.PerPage)
 		}
 
-		ePayload := pexels.PhotoPayload{}
+		ePayload := PhotoPayload{}
 		json.Unmarshal([]byte(tc.respBody), &ePayload)
 		if !cmp.Equal(aResp.Payload, ePayload) {
 			t.Errorf("expected payload %v, got %v", ePayload, aResp.Payload)
@@ -96,36 +93,36 @@ func TestSearchPhotos(t *testing.T) {
 
 	tcs := []struct {
 		statusCode int
-		opts       pexels.Options
-		params     *pexels.SearchPhotosParams
+		opts       *Options
+		params     *PhotoSearchParams
 		respBody   string
 	}{
 		{
 			http.StatusOK,
-			pexels.Options{APIKey: "testAPIKey"},
-			&pexels.SearchPhotosParams{Query: ""},
+			&Options{APIKey: "testAPIKey"},
+			&PhotoSearchParams{Query: ""},
 			``,
 		},
 		{
 			http.StatusForbidden,
-			pexels.Options{APIKey: "invalid-APIKey"},
-			&pexels.SearchPhotosParams{Query: "City Lights"},
+			&Options{APIKey: "invalid-APIKey"},
+			&PhotoSearchParams{Query: "City Lights"},
 			`{"error": "Access to this API has been disallowed"}`,
 		},
 		{
 			http.StatusOK,
-			pexels.Options{APIKey: "testAPIKey"},
-			&pexels.SearchPhotosParams{Query: "random-garbagepaosdjfpoijqwpoeijo!@#$%:;(*)"},
+			&Options{APIKey: "testAPIKey"},
+			&PhotoSearchParams{Query: "random-garbagepaosdjfpoijqwpoeijo!@#$%:;(*)"},
 			`{"page":1,"per_page":1,"photos":[],"total_results":0,"url":"https://api-server.pexels.com/search/videos/random-garbagepaosdjfpoijqwpoeijo!@#$%:;(*)/"}`,
 		},
 		{
 			http.StatusOK,
-			pexels.Options{APIKey: "testAPIKey"},
-			&pexels.SearchPhotosParams{Query: "nature",
-				Locale:      pexels.UK_UA,
-				Orientation: pexels.Landscape,
-				Size:        pexels.Medium,
-				Color:       pexels.Red,
+			&Options{APIKey: "testAPIKey"},
+			&PhotoSearchParams{Query: "nature",
+				Locale:      UK_UA,
+				Orientation: Landscape,
+				Size:        Medium,
+				Color:       Red,
 				Page:        1,
 				PerPage:     1,
 			},
@@ -159,7 +156,7 @@ func TestSearchPhotos(t *testing.T) {
 			}
 		}
 
-		ePayload := pexels.PhotoPayload{}
+		ePayload := PhotoPayload{}
 		json.Unmarshal([]byte(tc.respBody), &ePayload)
 		if !cmp.Equal(aResp.Payload, ePayload) {
 			t.Errorf("expected payload %v, got %v", ePayload, aResp.Payload)
@@ -170,14 +167,14 @@ func TestSearchPhotos(t *testing.T) {
 func TestFailedCuratedPhotos(t *testing.T) {
 	t.Parallel()
 
-	options := pexels.Options{
+	options := Options{
 		APIKey:     "testAPIKey",
 		HTTPClient: &badMockHTTPClient{newMockHandler(0, "", nil)},
 	}
-
-	c, _ := pexels.New(options)
-
-	params := pexels.CuratedPhotosParams{
+	c := Client{
+		opts: options,
+	}
+	params := CuratedPhotosParams{
 		Page:    2,
 		PerPage: 80,
 	}
@@ -188,26 +185,27 @@ func TestFailedCuratedPhotos(t *testing.T) {
 	}
 	if err.Error() != "BIG OOF dawg, looks like we found an error" {
 		t.Error("expected error does match return error")
-	} else if !cmp.Equal(zero, pexels.PhotosResponse{}) {
-		t.Error("expected empty pexels.PhotosResponse struct")
+	} else if !cmp.Equal(zero, PhotosResponse{}) {
+		t.Error("expected empty PhotosResponse struct")
 	}
 }
 
 func TestFailedSearchPhotos(t *testing.T) {
 	t.Parallel()
 
-	options := pexels.Options{
+	options := Options{
 		APIKey:     "testAPIKey",
 		HTTPClient: &badMockHTTPClient{newMockHandler(0, "", nil)},
 	}
-	c, _ := pexels.New(options)
-
-	params := pexels.SearchPhotosParams{
+	c := Client{
+		opts: options,
+	}
+	params := PhotoSearchParams{
 		Query:       "Failure",
-		Locale:      pexels.UK_UA,
-		Orientation: pexels.Landscape,
-		Size:        pexels.Medium,
-		Color:       pexels.Red,
+		Locale:      UK_UA,
+		Orientation: Landscape,
+		Size:        Medium,
+		Color:       Red,
 		Page:        1,
 		PerPage:     1,
 	}
@@ -218,7 +216,18 @@ func TestFailedSearchPhotos(t *testing.T) {
 	}
 	if err.Error() != "BIG OOF dawg, looks like we found an error" {
 		t.Error("expected error does match return error")
-	} else if !cmp.Equal(zero, pexels.PhotosResponse{}) {
-		t.Error("expected empty pexels.PhotosResponse struct")
+	} else if !cmp.Equal(zero, PhotosResponse{}) {
+		t.Error("expected empty PhotosResponse struct")
+	}
+}
+
+func TestPhotoIsMedia(t *testing.T) {
+	t.Parallel()
+
+	p := Photo{}
+	p.isMedia()
+	if p.MediaType() != photoType {
+		t.Errorf("Expected photo media type to be %s, got %s", photoType,
+			p.MediaType())
 	}
 }

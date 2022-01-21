@@ -5,7 +5,11 @@ import (
 	"fmt"
 )
 
-const videoPath = "/videos"
+const (
+	videoEndpoint         = "/videos/videos/"
+	popularVideosEndpoint = "/videos/popular"
+	searchVideosEndpoint  = "/videos/search"
+)
 
 type Video struct {
 	ID            uint64              `json:"id"`
@@ -28,6 +32,19 @@ type VideoResponse struct {
 	Video  Video
 }
 
+type PexelUser struct {
+	ID   uint64 `json:"id"`
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+type Quality string
+
+const (
+	SD Quality = "sd"
+	HD Quality = "hd"
+)
+
 type VideoFile struct {
 	ID       uint64  `json:"id"`
 	Quality  Quality `json:"quality"` // SD or HD
@@ -40,7 +57,7 @@ type VideoFile struct {
 type VideoPicture struct {
 	ID      uint64 `json:"id"`
 	Picture string `json:"picture"`
-	NR      uint8  `json:"nr"` // Number of Records; Index of Object in Slice
+	NR      uint8  `json:"nr"` // Index of Object in Slice
 }
 
 type VideoPayload struct {
@@ -53,13 +70,6 @@ type VideosResponse struct {
 	Payload VideoPayload
 }
 
-type Quality string
-
-const (
-	SD Quality = "sd"
-	HD Quality = "hd"
-)
-
 type PopularVideoParams struct {
 	MinWidth    uint16 `query:"min_width"`
 	MinHeight   uint16 `query:"min_height"`
@@ -69,7 +79,7 @@ type PopularVideoParams struct {
 	PerPage     uint8  `query:"per_page,15"` // Max: 80
 }
 
-type SearchVideoParams struct {
+type VideoSearchParams struct {
 	Query string `query:"query"` // Required
 
 	// Optional parameters
@@ -77,23 +87,16 @@ type SearchVideoParams struct {
 	// Landscape, Portrait, Square
 	Orientation Orientation `query:"orientation"`
 	// Large (24MP), Medium (12MP), Small (4MP)
-	Size    Size   `query:"size"`
+	Size Size `query:"size"`
 	Page    uint16 `query:"page,1"`
 	PerPage uint8  `query:"per_page,15"` // Max: 80
 }
 
-type PexelUser struct {
-	ID   uint64 `json:"id"`
-	Name string `json:"name"`
-	URL  string `json:"url"`
-}
-
-func (c *Client) GetVideo(id int) (VideoResponse, error) {
-	resp, err := c.get(fmt.Sprintf("%s/videos/%d", videoPath, id), "", &Video{})
+func (c *Client) GetVideo(videoID uint64) (VideoResponse, error) {
+	resp, err := c.get(fmt.Sprint(videoEndpoint, videoID), "", &Video{})
 	if err != nil {
 		return VideoResponse{}, err
 	}
-
 	vr := VideoResponse{Video: *resp.Data.(*Video)}
 	resp.copyCommon(&vr.Common)
 	return vr, nil
@@ -102,27 +105,25 @@ func (c *Client) GetVideo(id int) (VideoResponse, error) {
 func (c *Client) GetPopularVideos(params *PopularVideoParams) (VideosResponse,
 	error) {
 
-	resp, err := c.get(fmt.Sprintf("%s/popular", videoPath), params, &VideoPayload{})
+	resp, err := c.get(popularVideosEndpoint, params, &VideoPayload{})
 	if err != nil {
 		return VideosResponse{}, err
 	}
-
 	popResp := VideosResponse{Payload: *resp.Data.(*VideoPayload)}
 	resp.copyCommon(&popResp.Common)
 	return popResp, nil
 }
 
-func (c *Client) SearchVideos(params *SearchVideoParams) (VideosResponse,
+func (c *Client) SearchVideos(params *VideoSearchParams) (VideosResponse,
 	error) {
 
 	if params == nil || params.Query == "" {
 		return VideosResponse{}, errors.New("Query is required")
 	}
-	resp, err := c.get(fmt.Sprintf("%s/search", videoPath), params, &VideoPayload{})
+	resp, err := c.get(searchVideosEndpoint, params, &VideoPayload{})
 	if err != nil {
 		return VideosResponse{}, err
 	}
-
 	vsr := VideosResponse{Payload: *resp.Data.(*VideoPayload)}
 	resp.copyCommon(&vsr.Common)
 	return vsr, nil

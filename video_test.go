@@ -1,11 +1,10 @@
-package pexels_test
+package pexels
 
 import (
 	"encoding/json"
 	"net/http"
 	"testing"
 
-	"github.com/JayMonari/go-pexels"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -14,19 +13,19 @@ func TestGetVideo(t *testing.T) {
 
 	tcs := []struct {
 		statusCode int
-		opts       pexels.Options
-		ID         int
+		opts       *Options
+		ID         uint64
 		respBody   string
 	}{
 		{
 			http.StatusOK,
-			pexels.Options{APIKey: "testAPIKey"},
+			&Options{APIKey: "testAPIKey"},
 			2499611,
 			`{"id":2499611,"width":1080,"height":1920,"url":"https://www.pexels.com/video/2499611/","image":"https://images.pexels.com/videos/2499611/free-video-2499611.jpg?fit=crop&w=1200&h=630&auto=compress&cs=tinysrgb","duration":22,"user":{"id":680589,"name":"JoeyFarina","url":"https://www.pexels.com/@joey"},"video_files":[{"id":125004,"quality":"hd","file_type":"video/mp4","width":1080,"height":1920,"link":"https://player.vimeo.com/external/342571552.hd.mp4?s=6aa6f164de3812abadff3dde86d19f7a074a8a66&profile_id=175&oauth2_token_id=57447761"},{"id":125005,"quality":"sd","file_type":"video/mp4","width":540,"height":960,"link":"https://player.vimeo.com/external/342571552.sd.mp4?s=e0df43853c25598dfd0ec4d3f413bce1e002deef&profile_id=165&oauth2_token_id=57447761"},{"id":125006,"quality":"sd","file_type":"video/mp4","width":240,"height":426,"link":"https://player.vimeo.com/external/342571552.sd.mp4?s=e0df43853c25598dfd0ec4d3f413bce1e002deef&profile_id=139&oauth2_token_id=57447761"},{"id":125007,"quality":"hd","file_type":"video/mp4","width":720,"height":1280,"link":"https://player.vimeo.com/external/342571552.hd.mp4?s=6aa6f164de3812abadff3dde86d19f7a074a8a66&profile_id=174&oauth2_token_id=57447761"},{"id":125008,"quality":"sd","file_type":"video/mp4","width":360,"height":640,"link":"https://player.vimeo.com/external/342571552.sd.mp4?s=e0df43853c25598dfd0ec4d3f413bce1e002deef&profile_id=164&oauth2_token_id=57447761"},{"id":125009,"quality":"hls","file_type":"video/mp4","width":null,"height":null,"link":"https://player.vimeo.com/external/342571552.m3u8?s=53433233e4176eead03ddd6fea04d9fb2bce6637&oauth2_token_id=57447761"}],"video_pictures":[{"id":308178,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-0.jpg","nr":0},{"id":308179,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-1.jpg","nr":1},{"id":308180,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-2.jpg","nr":2},{"id":308181,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-3.jpg","nr":3},{"id":308182,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-4.jpg","nr":4},{"id":308183,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-5.jpg","nr":5},{"id":308184,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-6.jpg","nr":6},{"id":308185,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-7.jpg","nr":7},{"id":308186,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-8.jpg","nr":8},{"id":308187,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-9.jpg","nr":9},{"id":308188,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-10.jpg","nr":10},{"id":308189,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-11.jpg","nr":11},{"id":308190,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-12.jpg","nr":12},{"id":308191,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-13.jpg","nr":13},{"id":308192,"picture":"https://static-videos.pexels.com/videos/2499611/pictures/preview-14.jpg","nr":14}]}`,
 		},
 		{
 			http.StatusNotFound,
-			pexels.Options{APIKey: "testAPIKey"},
+			&Options{APIKey: "testAPIKey"},
 			0,
 			`{"status":404,"error":"Not Found"}`,
 		},
@@ -41,7 +40,7 @@ func TestGetVideo(t *testing.T) {
 		if aResp := aResp.Common.StatusCode; aResp != tc.statusCode {
 			t.Errorf("expected status code %d, got %d", tc.statusCode, aResp)
 		}
-		eVideo := pexels.Video{}
+		eVideo := Video{}
 		json.Unmarshal([]byte(tc.respBody), &eVideo)
 		if !cmp.Equal(aResp.Video, eVideo) {
 			t.Errorf("expected video %v, got %v", eVideo, aResp.Video)
@@ -54,14 +53,14 @@ func TestGetPopularVideos(t *testing.T) {
 
 	tcs := []struct {
 		statusCode int
-		opts       pexels.Options
-		params     *pexels.PopularVideoParams
+		opts       *Options
+		params     *PopularVideoParams
 		respBody   string
 	}{
 		{
 			http.StatusOK,
-			pexels.Options{APIKey: "testAPIKey"},
-			&pexels.PopularVideoParams{
+			&Options{APIKey: "testAPIKey"},
+			&PopularVideoParams{
 				MinWidth:    4096,
 				MinHeight:   2160,
 				MinDuration: 10,
@@ -102,7 +101,7 @@ func TestGetPopularVideos(t *testing.T) {
 			}
 		}
 
-		ePayload := pexels.VideoPayload{}
+		ePayload := VideoPayload{}
 		json.Unmarshal([]byte(tc.respBody), &ePayload)
 		if !cmp.Equal(aResp.Payload, ePayload) {
 			t.Errorf("expected payload %v, got %v", ePayload, aResp.Payload)
@@ -115,36 +114,36 @@ func TestSearchVideos(t *testing.T) {
 
 	tcs := []struct {
 		statusCode int
-		opts       pexels.Options
-		params     *pexels.SearchVideoParams
+		opts       *Options
+		params     *VideoSearchParams
 		respBody   string
 	}{
 		{
 			http.StatusOK,
-			pexels.Options{APIKey: "testAPIKey"},
-			&pexels.SearchVideoParams{Query: ""},
+			&Options{APIKey: "testAPIKey"},
+			&VideoSearchParams{Query: ""},
 			``,
 		},
 		{
 			http.StatusForbidden,
-			pexels.Options{APIKey: "invalid-APIKey"},
-			&pexels.SearchVideoParams{Query: "City Lights"},
+			&Options{APIKey: "invalid-APIKey"},
+			&VideoSearchParams{Query: "City Lights"},
 			`{"error": "Access to this API has been disallowed"}`,
 		},
 		{
 			http.StatusOK,
-			pexels.Options{APIKey: "testAPIKey"},
-			&pexels.SearchVideoParams{Query: "naasdfasdfasdfasdftasldkjfasdlkjfure"},
+			&Options{APIKey: "testAPIKey"},
+			&VideoSearchParams{Query: "naasdfasdfasdfasdftasldkjfasdlkjfure"},
 			`{"page":1,"per_page":1,"videos":[],"total_results":0,"url":"https://api-server.pexels.com/search/videos/naasdfasdfasdfasdftasldkjfasdlkjfure/"}18`,
 		},
 		{
 			http.StatusOK,
-			pexels.Options{APIKey: "testAPIKey"},
-			&pexels.SearchVideoParams{
+			&Options{APIKey: "testAPIKey"},
+			&VideoSearchParams{
 				Query:       "dogs",
-				Locale:      pexels.UK_UA,
-				Orientation: pexels.Landscape,
-				Size:        pexels.Medium,
+				Locale:      UK_UA,
+				Orientation: Landscape,
+				Size:        Medium,
 				Page:        4,
 				PerPage:     3,
 			},
@@ -168,8 +167,8 @@ func TestSearchVideos(t *testing.T) {
 
 		ePage := tc.params.Page
 		ePerPage := tc.params.PerPage
-		ePayload := pexels.VideoPayload{}
-		// We need tpexels.his because the API defaults to page 1 and per_page 1
+		ePayload := VideoPayload{}
+		// We need this because the API defaults to page 1 and per_page 1
 		if len(aResp.Payload.Videos) != 0 {
 			if aResp.Payload.Page != ePage {
 				t.Errorf("expected page to be %d, got %d", aResp.Payload.Page, ePage)
@@ -192,32 +191,35 @@ func TestSearchVideos(t *testing.T) {
 func TestFailedGetVideo(t *testing.T) {
 	t.Parallel()
 
-	options := pexels.Options{
+	options := Options{
 		APIKey:     "testAPIKey",
 		HTTPClient: &badMockHTTPClient{newMockHandler(0, "", nil)},
 	}
-	c, _ := pexels.New(options)
+	c := Client{
+		opts: options,
+	}
 	zero, err := c.GetVideo(999999999999999)
 	if err == nil {
 		t.Error("expected error but got nil")
 	}
 	if err.Error() != "BIG OOF dawg, looks like we found an error" {
 		t.Error("expected error does match return error")
-	} else if !cmp.Equal(zero, pexels.VideoResponse{}) {
-		t.Error("expected empty pexels.VideoResponse struct")
+	} else if !cmp.Equal(zero, VideoResponse{}) {
+		t.Error("expected empty VideoResponse struct")
 	}
 }
 
 func TestFailedPopularVideos(t *testing.T) {
 	t.Parallel()
 
-	options := pexels.Options{
+	options := Options{
 		APIKey:     "testAPIKey",
 		HTTPClient: &badMockHTTPClient{newMockHandler(0, "", nil)},
 	}
-
-	c, _ := pexels.New(options)
-	params := pexels.PopularVideoParams{
+	c := Client{
+		opts: options,
+	}
+	params := PopularVideoParams{
 		MinWidth:    4096,
 		MinHeight:   2160,
 		MinDuration: 10,
@@ -232,24 +234,26 @@ func TestFailedPopularVideos(t *testing.T) {
 	}
 	if err.Error() != "BIG OOF dawg, looks like we found an error" {
 		t.Error("expected error does match return error")
-	} else if !cmp.Equal(zero, pexels.VideosResponse{}) {
-		t.Error("expected empty pexels.VideosResponse struct")
+	} else if !cmp.Equal(zero, VideosResponse{}) {
+		t.Error("expected empty VideosResponse struct")
 	}
 }
 
 func TestFailedSearchVideos(t *testing.T) {
 	t.Parallel()
 
-	options := pexels.Options{
+	options := Options{
 		APIKey:     "testAPIKey",
 		HTTPClient: &badMockHTTPClient{newMockHandler(0, "", nil)},
 	}
-	c, _ := pexels.New(options)
-	params := pexels.SearchVideoParams{
+	c := Client{
+		opts: options,
+	}
+	params := VideoSearchParams{
 		Query:       "Failure",
-		Locale:      pexels.UK_UA,
-		Orientation: pexels.Landscape,
-		Size:        pexels.Medium,
+		Locale:      UK_UA,
+		Orientation: Landscape,
+		Size:        Medium,
 		Page:        1,
 		PerPage:     1,
 	}
@@ -260,7 +264,18 @@ func TestFailedSearchVideos(t *testing.T) {
 	}
 	if err.Error() != "BIG OOF dawg, looks like we found an error" {
 		t.Error("expected error does match return error")
-	} else if !cmp.Equal(zero, pexels.VideosResponse{}) {
-		t.Error("expected empty pexels.VideosResponse struct")
+	} else if !cmp.Equal(zero, VideosResponse{}) {
+		t.Error("expected empty VideosResponse struct")
+	}
+}
+
+func TestVideoIsMedia(t *testing.T) {
+	t.Parallel()
+
+	v := Video{}
+	v.isMedia()
+	if v.MediaType() != videoType {
+		t.Errorf("Expected video media type to be %s, got %s", videoType,
+			v.MediaType())
 	}
 }

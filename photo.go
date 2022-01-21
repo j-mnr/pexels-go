@@ -5,7 +5,11 @@ import (
 	"fmt"
 )
 
-const photoPath = "/v1"
+const (
+	photoEndpoint = "/photos/"
+	searchPhotosEndpoint = "/search"
+	curatedPhotosEndpoint = "/curated"
+)
 
 type Photo struct {
 	ID              uint64              `json:"id"`
@@ -15,9 +19,9 @@ type Photo struct {
 	Photographer    string              `json:"photographer"`
 	PhotographerURL string              `json:"photographer_url"`
 	PhotographerID  uint64              `json:"photographer_id"`
-	AvgColor        string              `json:"avg_color"`
+	AvgColor        string              `json:"avg_color"` // In hex e.g. #978E82
 	Type            CollectionMediaType `json:"type,omitempty"`
-	Src             PhotoSource         `json:"src"`
+	Src             PhotoSource         `json:"src"`   // URLs of images
 	Liked           bool                `json:"liked"` // Optional
 }
 
@@ -55,7 +59,24 @@ type CuratedPhotosParams struct {
 	PerPage uint8  `query:"per_page,15"` // Max 80
 }
 
-type SearchPhotosParams struct {
+type Color string
+
+const (
+	Red       = "red"
+	Orange    = "orange"
+	Yellow    = "yellow"
+	Green     = "green"
+	Turquoise = "turquoise"
+	Blue      = "blue"
+	Violet    = "violet"
+	Pink      = "pink"
+	Brown     = "brown"
+	Black     = "black"
+	Gray      = "gray"
+	White     = "white"
+)
+
+type PhotoSearchParams struct {
 	Query string `query:"query"` // Required
 
 	// Optional parameters
@@ -63,66 +84,52 @@ type SearchPhotosParams struct {
 	// Landscape, Portrait, Square
 	Orientation Orientation `query:"orientation"`
 	// Large (24MP), Medium (12MP), Small (4MP)
-	Size    Size   `query:"size"`
+	Size Size `query:"size"`
 	Color   Color  `query:"color"`
 	Page    uint16 `query:"page,1"`
 	PerPage uint8  `query:"per_page,15"` // Max: 80
 }
 
-type Color string
-
-const (
-	Red       Color = "red"
-	Orange    Color = "orange"
-	Yellow    Color = "yellow"
-	Green     Color = "green"
-	Turquoise Color = "turquoise"
-	Blue      Color = "blue"
-	Violet    Color = "violet"
-	Pink      Color = "pink"
-	Brown     Color = "brown"
-	Black     Color = "black"
-	Gray      Color = "gray"
-	White     Color = "white"
-)
-
-// GetPhoto retrieves a photo by its ID
-func (c *Client) GetPhoto(id int) (PhotoResponse, error) {
-	resp, err := c.get(fmt.Sprintf("%s/%s/%d", photoPath, "photos", id), nil, &Photo{})
+// Retreives a photo by its ID found at the end of its URL
+func (c *Client) GetPhoto(photoID uint64) (PhotoResponse, error) {
+	resp, err := c.get(fmt.Sprint(photoEndpoint, photoID), "", &Photo{})
 	if err != nil {
 		return PhotoResponse{}, err
 	}
-
 	pr := PhotoResponse{}
 	pr.Photo = *resp.Data.(*Photo)
 	resp.copyCommon(&pr.Common)
 	return pr, nil
 }
 
-func (c *Client) GetCuratedPhotos(params *CuratedPhotosParams) (PhotosResponse, error) {
-	resp, err := c.get(fmt.Sprintf("%s/%s", photoPath, "curated"), params, &PhotoPayload{})
+// Retrieves the current Curated list, updated hourly by Pexels. If nil is
+// passed it will default to the first page and return 15 photos.
+func (c *Client) GetCuratedPhotos(params *CuratedPhotosParams) (PhotosResponse,
+	error) {
+
+	resp, err := c.get(curatedPhotosEndpoint, params, &PhotoPayload{})
 	if err != nil {
 		return PhotosResponse{}, err
 	}
-
-	ppr := PhotosResponse{}
-	ppr.Payload = *resp.Data.(*PhotoPayload)
-	resp.copyCommon(&ppr.Common)
-	return ppr, nil
+	cr := PhotosResponse{}
+	cr.Payload = *resp.Data.(*PhotoPayload)
+	resp.copyCommon(&cr.Common)
+	return cr, nil
 }
 
-func (c *Client) SearchPhotos(params *SearchPhotosParams) (PhotosResponse, error) {
-	if params == nil || params.Query == "" {
-		return PhotosResponse{}, errors.New("query is required")
-	}
+// Returns an error if the Query parameter has no value
+func (c *Client) SearchPhotos(params *PhotoSearchParams) (PhotosResponse,
+	error) {
 
-	resp, err := c.get(fmt.Sprintf("%s/%s", photoPath, "curated"), params, &PhotoPayload{})
+	if params == nil || params.Query == "" {
+		return PhotosResponse{}, errors.New("Query is required")
+	}
+	resp, err := c.get(searchPhotosEndpoint, params, &PhotoPayload{})
 	if err != nil {
 		return PhotosResponse{}, err
 	}
-
-	ppr := PhotosResponse{}
-	ppr.Payload = *resp.Data.(*PhotoPayload)
-	resp.copyCommon(&ppr.Common)
-	return ppr, nil
+	psr := PhotosResponse{}
+	psr.Payload = *resp.Data.(*PhotoPayload)
+	resp.copyCommon(&psr.Common)
+	return psr, nil
 }

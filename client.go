@@ -6,21 +6,20 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 )
 
-const APIBaseURL = "https://api.pexels.com"
+const (
+	// Base URL for both Photos and Collections use VideoBaseURL if you need
+	// videos
+	PhotoBaseURL = "https://api.pexels.com/v1"
+	VideoBaseURL = "https://api.pexels.com/videos"
+)
 
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
-}
-
-type Options struct {
-	APIKey     string
-	UserAgent  string
-	HTTPClient HTTPClient
-	baseURL    string
 }
 
 type Client struct {
@@ -28,55 +27,82 @@ type Client struct {
 	opts Options
 }
 
-// New creates a Pexels API client. An API key must be provided or else an
-// error will be returned and if new HTTPClient is provided the
-// http.DefaultClient will be used.
-func New(options Options) (*Client, error) {
-	if options.APIKey == "" {
-		return nil, errors.New("an API key is required to access the Pexels API")
-	} else if options.HTTPClient == nil {
-		options.HTTPClient = http.DefaultClient
-	}
-	options.baseURL = APIBaseURL
-	return &Client{opts: options}, nil
+type Options struct {
+	APIKey        string
+	UserAgent     string
+	HTTPClient    HTTPClient
+	photosBaseURL string
+	videoBaseURL  string
 }
 
-func (c *Client) get(path string, reqData, respData interface{}) (Response, error) {
-	resp := Response{}
-	if respData != nil {
-		resp.Data = respData
-	}
+type ResponseCommon struct {
+	StatusCode int         `json:"status_code"`
+	Status     string      `json:"status"`
+	Header     http.Header `json:"headers"`
+}
 
+func (rc *ResponseCommon) convertHeaderToInt(h string) int {
+	i, _ := strconv.Atoi(h)
+	return i
+}
+
+func (rc *ResponseCommon) GetRateLimit() int {
+	return rc.convertHeaderToInt(rc.Header.Get("X-Ratelimit-Limit"))
+}
+
+func (rc *ResponseCommon) GetRateLimitRemaining() int {
+	return rc.convertHeaderToInt(rc.Header.Get("X-Ratelimit-Remaining"))
+}
+
+// Returns a UNIX timestamp of when the current monthly period will roll over
+func (rc *ResponseCommon) GetRateLimitReset() int {
+	return rc.convertHeaderToInt(rc.Header.Get("X-Ratelimit-Reset"))
+}
+
+type Response struct {
+	Common ResponseCommon
+	Data   interface{}
+}
+
+func (r *Response) copyCommon(rc *ResponseCommon) {
+	rc.StatusCode = r.Common.StatusCode
+	rc.Header = r.Common.Header
+	rc.Status = r.Common.Status
+}
+
+// Returns a new Pexels API client. If the Options provided does not contain an
+// API Key an error will be returned
+func NewClient(options Options) (*Client, error) {
+	if options.APIKey == "" {
+		return nil, errors.New("An API Key is required")
+	}
+	if options.HTTPClient == nil {
+		options.HTTPClient = http.DefaultClient
+	}
+	options.videoBaseURL = "https://api.pexels.com/"
+	options.photosBaseURL = PhotoBaseURL
+	client := &Client{
+		opts: options,
+	}
+	return client, nil
+}
+
+func (c *Client) get(path string, reqData, respData interface{}) (Response,
+	error) {
+
+	response := Response{}
+	if respData != nil {
+		response.Data = respData
+	}
 	req, err := c.newRequest(path, reqData)
 	if err != nil {
 		return Response{}, err
 	}
-
-	err = c.doRequest(req, &resp)
+	err = c.doRequest(req, &response)
 	if err != nil {
 		return Response{}, err
 	}
-
-	return resp, nil
-}
-
-func (c *Client) newRequest(path string, data interface{}) (*http.Request, error) {
-	url := c.opts.baseURL + path
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	} else if data == nil {
-		return req, nil
-	}
-
-	query, err := buildQueryString(req, data)
-	if err != nil {
-		return nil, err
-	}
-
-	req.URL.RawQuery = query
-	return req, nil
+	return response, nil
 }
 
 func (c *Client) doRequest(req *http.Request, resp *Response) error {
@@ -87,57 +113,37 @@ func (c *Client) doRequest(req *http.Request, resp *Response) error {
 	}
 	defer httpResp.Body.Close()
 
-	err = json.NewDecoder(httpResp.Body).Decode(resp.Data)
-	if err != nil {
-		return err
+	switch resp.Data.(type) {
+	case *MediaPayload:
+		var data struct {
+			ID    string
+			Media []json.RawMessage `json:"media"`
+			Pagination
+		}
+		err = json.NewDecoder(httpResp.Body).Decode(&data)
+		if err != nil {
+			return err
+		}
+		ms := make([]Media, 0, len(data.Media))
+		for _, rawMsg := range data.Media {
+			m, err := decodeMediaFromRawMessage(rawMsg)
+			if err != nil {
+				return err
+			}
+			ms = append(ms, m)
+		}
+		resp.Data =
+			MediaPayload{ID: data.ID, Media: ms, Pagination: data.Pagination}
+	default:
+		err = json.NewDecoder(httpResp.Body).Decode(resp.Data)
 	}
-
 	resp.Common.Header = httpResp.Header
 	resp.Common.StatusCode = httpResp.StatusCode
 	resp.Common.Status = httpResp.Status
-	return nil
-}
-
-func (c *Client) setRequestHeaders(req *http.Request) {
-	opts := c.opts
-	req.Header.Set("Authorization", opts.APIKey)
-	req.Header.Set("Accept", "application/json")
-	if opts.UserAgent != "" {
-		req.Header.Set("User-Agent", opts.UserAgent)
-	}
-}
-
-func buildQueryString(req *http.Request, v interface{}) (string, error) {
-	isNil, err := isZero(v)
 	if err != nil {
-		return "", err
-	} else if isNil {
-		return "", nil
+		return err
 	}
-
-	query := req.URL.Query()
-	vType := reflect.TypeOf(v).Elem()
-	vVal := reflect.ValueOf(v).Elem()
-	for i := 0; i < vType.NumField(); i++ {
-		defaultVal := ""
-
-		tag := vType.Field(i).Tag.Get("query")
-		if sl := strings.Split(tag, ","); len(sl) == 2 {
-			tag, defaultVal = sl[0], sl[1]
-		}
-
-		fieldVal := fmt.Sprintf("%v", vVal.Field(i))
-		if fieldVal == "" || fieldVal == "0" {
-			if defaultVal == "" {
-				continue
-			}
-			fieldVal = defaultVal
-		}
-
-		query.Add(tag, fieldVal)
-	}
-
-	return query.Encode(), nil
+	return nil
 }
 
 func decodeMediaFromRawMessage(rawMsg []byte) (Media, error) {
@@ -154,9 +160,84 @@ func decodeMediaFromRawMessage(rawMsg []byte) (Media, error) {
 	case photoType:
 		m = &Photo{}
 	default:
-		return nil, errors.New("unknown type: " + typeData.Type)
+		return nil, errors.New("The type specified is cannot be Unmarshalled" +
+			"into a Video or Photo struct")
 	}
 	return m, nil
+}
+
+func (c *Client) newRequest(path string, data interface{}) (*http.Request,
+	error) {
+
+	url := ""
+	if strings.HasPrefix(path, "/videos") {
+		url = c.opts.videoBaseURL + path
+	} else {
+		url = c.opts.photosBaseURL + path
+	}
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if data == nil {
+		return req, nil
+	}
+	query, err := buildQueryString(req, data)
+	if err != nil {
+		return nil, err
+	}
+	req.URL.RawQuery = query
+	return req, nil
+}
+
+func (c *Client) setRequestHeaders(req *http.Request) {
+	opts := c.opts
+
+	req.Header.Set("Authorization", opts.APIKey)
+	req.Header.Set("Accept", "application/json")
+	if opts.UserAgent != "" {
+		req.Header.Set("User-Agent", opts.UserAgent)
+	}
+}
+
+func (c *Client) SetUserAgent(userAgent string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.opts.UserAgent = userAgent
+}
+
+func buildQueryString(req *http.Request, v interface{}) (string, error) {
+	isNil, err := isZero(v)
+	if err != nil {
+		return "", err
+	} else if isNil {
+		return "", nil
+	}
+
+	query := req.URL.Query()
+	vType := reflect.TypeOf(v).Elem()
+	vValue := reflect.ValueOf(v).Elem()
+	for i := 0; i < vType.NumField(); i++ {
+		var defaultValue string
+
+		field := vType.Field(i)
+		tag := field.Tag.Get("query")
+		if strings.Contains(tag, ",") {
+			tagSlice := strings.Split(tag, ",")
+			tag = tagSlice[0]
+			defaultValue = tagSlice[1]
+		}
+
+		// Add any scalar values as query params
+		fieldValue := fmt.Sprintf("%v", vValue.Field(i))
+		// If no value was set by the user, use the default value specified in
+		// the struct tag
+		if fieldValue == "" || fieldValue == "0" {
+			if defaultValue == "" {
+				continue
+			}
+			fieldValue = defaultValue
+		}
+		query.Add(tag, fieldValue)
+	}
+	return query.Encode(), nil
 }
 
 func isZero(v interface{}) (bool, error) {

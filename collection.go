@@ -7,6 +7,7 @@ import (
 
 type Media interface {
 	MediaType() string
+
 	isMedia()
 }
 
@@ -33,7 +34,7 @@ type MediaPayload struct {
 
 type CollectionPayload struct {
 	ID          string       `json:"id"`
-	Collections []Collection `json:"collection"`
+	Collections []Collection `json:"collections"`
 	Pagination
 }
 
@@ -68,25 +69,26 @@ const (
 )
 
 type CollectionMediaParams struct {
-	ID   string
-	Type CollectionMediaType `query:"type"`
-	CollectionParams
+	ID      string
+	Type    CollectionMediaType `query:"type"`
+	Page    uint16              `query:"page,1"`
+	PerPage uint8               `query:"per_page,15"` // Max: 80
 }
 
-func (c *Client) GetCollection(params *CollectionMediaParams) (MediaResponse, error) {
+// Pexels API only gives you access to your own collections.
+func (c *Client) GetCollection(params *CollectionMediaParams) (
+	MediaResponse, error) {
+
 	if params == nil || params.ID == "" {
 		return MediaResponse{}, errors.New("Collection ID must be specified")
 	}
-
 	ID := params.ID
 	params.ID = ""
 	resp, err := c.get(fmt.Sprint("/collections/", ID), params, &MediaPayload{})
 	if err != nil {
 		return MediaResponse{}, err
 	}
-
 	cr := MediaResponse{}
-
 	for _, m := range resp.Data.(MediaPayload).Media {
 		switch m.MediaType() {
 		case photoType:
@@ -101,12 +103,12 @@ func (c *Client) GetCollection(params *CollectionMediaParams) (MediaResponse, er
 	return cr, nil
 }
 
+// The Pexels API only gives you access to your own collections.
 func (c *Client) GetCollections() (CollectionsResponse, error) {
 	resp, err := c.get("/collections", "", &CollectionPayload{})
 	if err != nil {
 		return CollectionsResponse{}, err
 	}
-
 	csr := CollectionsResponse{}
 	csr.Payload = *resp.Data.(*CollectionPayload)
 	resp.copyCommon(&csr.Common)
