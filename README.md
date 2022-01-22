@@ -47,7 +47,7 @@ import (
 
 func main() {
   myAPIKey := os.Getenv("PEXELS_API_KEY")
-  client, err := pexels.NewClient(pexels.Options{APIKey: myAPIKey})
+  client, err := pexels.New(pexels.Options{APIKey: myAPIKey})
   if err != nil {
     log.Fatal(err)
   }

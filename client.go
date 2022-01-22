@@ -72,7 +72,7 @@ func (r *Response) copyCommon(rc *ResponseCommon) {
 
 // Returns a new Pexels API client. If the Options provided does not contain an
 // API Key an error will be returned
-func NewClient(options Options) (*Client, error) {
+func New(options Options) (*Client, error) {
 	if options.APIKey == "" {
 		return nil, errors.New("An API Key is required")
 	}
@@ -176,6 +176,9 @@ func (c *Client) newRequest(path string, data interface{}) (*http.Request,
 		url = c.opts.photosBaseURL + path
 	}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
 	if data == nil {
 		return req, nil
 	}
