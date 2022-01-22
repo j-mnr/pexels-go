@@ -11,9 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-type mockHTTPClient struct {
-	mockHandler http.HandlerFunc
-}
+type mockHTTPClient struct{ mockHandler http.HandlerFunc }
 
 func (mtc *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	rr := httptest.NewRecorder()
@@ -39,42 +37,16 @@ func newMockHandler(statusCode int, json string, headers map[string]string) http
 	}
 }
 
-func TestNewClient(t *testing.T) {
+func TestNew(t *testing.T) {
 	t.Parallel()
-
-	testCases := []struct {
-		expectErr bool
-		options   Options
-	}{
-		{true,
-			Options{}, // No API key
-		},
-		{
-			false,
-			Options{
-				APIKey:     "pexels-api-key",
-				UserAgent:  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36",
-				HTTPClient: &http.Client{},
-			},
-		},
-		{
-			false,
-			Options{
-				APIKey:    "pexels-api-key",
-				UserAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36",
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		client, err := NewClient(tc.options)
+	for _, tc := range newTT {
+		client, err := New(tc.options)
 		if err != nil && !tc.expectErr {
 			t.Errorf("Did not expect an error, got \"%s\"", err)
 		} else if tc.expectErr {
 			continue
 		}
 		opts := client.opts
-
 		var actual, expected interface{}
 		actual, expected = opts.APIKey, tc.options.APIKey
 		if actual != expected {
@@ -97,38 +69,8 @@ func TestNewClient(t *testing.T) {
 
 func TestGetRateLimitHeaders(t *testing.T) {
 	t.Parallel()
-
-	tCases := []struct {
-		statusCode      int
-		options         *Options
-		photoID         uint64
-		respBody        string
-		headerLimit     string
-		headerRemaining string
-		headerReset     string
-	}{
-		{
-			http.StatusOK,
-			&Options{APIKey: "testAPIKey"},
-			2014422,
-			`{"id":2014422,"width":3024,"height": 3024,"url":"https://www.pexels.com/photo/brown-rocks-during-golden-hour-2014422/"}`,
-			"20000",
-			"18000",
-			"1625092515",
-		},
-		{
-			http.StatusOK,
-			&Options{APIKey: "testAPIKey"},
-			2014422,
-			`{"id":2014422,"width":3024,"height": 3024,"url":"https://www.pexels.com/photo/brown-rocks-during-golden-hour-2014422/"}`,
-			"",
-			"",
-			"",
-		},
-	}
-	for _, tc := range tCases {
+	for _, tc := range rateLimitHeadersTT {
 		mockRespHeaders := make(map[string]string)
-
 		if tc.headerLimit != "" {
 			mockRespHeaders["X-Ratelimit-Limit"] = tc.headerLimit
 			mockRespHeaders["X-Ratelimit-Remaining"] = tc.headerRemaining
@@ -141,7 +83,6 @@ func TestGetRateLimitHeaders(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-
 		expected, _ := strconv.Atoi(tc.headerLimit)
 		if actual := resp.Common.GetRateLimit(); actual != expected {
 			t.Errorf("expected \"X-Ratelimit-Limit\" to be \"%d\", got \"%d\"",
@@ -162,26 +103,14 @@ func TestGetRateLimitHeaders(t *testing.T) {
 
 func TestSetRequestHeaders(t *testing.T) {
 	t.Parallel()
-
-	tcs := []struct {
-		endpoint  string
-		APIKey    string
-		UserAgent string
-	}{
-		{"/photos/", "testAPIKey", "testUserAgent"},
-		{"/videos/", "testAPIKey", ""},
-		{"/collections/", "testAPIKey", "otherUserAgent"},
-	}
-
-	for _, tc := range tcs {
-		client, err := NewClient(Options{
+	for _, tc := range setRequestHeadersTT {
+		client, err := New(Options{
 			APIKey:    tc.APIKey,
 			UserAgent: tc.UserAgent,
 		})
 		if err != nil {
 			t.Errorf("Did not expect an error, got \"%s\"", err.Error())
 		}
-
 		req, _ := http.NewRequest("GET", tc.endpoint, nil)
 		client.setRequestHeaders(req)
 		expected := client.opts.UserAgent
@@ -204,8 +133,7 @@ func TestSetRequestHeaders(t *testing.T) {
 
 func TestSetUserAgent(t *testing.T) {
 	t.Parallel()
-
-	c, err := NewClient(Options{APIKey: "testAPIKey"})
+	c, err := New(Options{APIKey: "testAPIKey"})
 	if err != nil {
 		t.Errorf("Did not expect an error, got \"%s\"", err.Error())
 	}
@@ -239,9 +167,7 @@ func TestCopyCommon(t *testing.T) {
 	}
 }
 
-type badMockHTTPClient struct {
-	mockHandler http.HandlerFunc
-}
+type badMockHTTPClient struct{ mockHandler http.HandlerFunc }
 
 func (mtc *badMockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	return nil, errors.New("BIG OOF dawg, looks like we found an error")
@@ -256,7 +182,6 @@ func TestFailedHTTPClientDoRequest(t *testing.T) {
 	c := Client{
 		opts: options,
 	}
-
 	_, err := c.GetPhoto(12345)
 	if err == nil {
 		t.Error("expected error but got nil")
@@ -268,7 +193,6 @@ func TestFailedHTTPClientDoRequest(t *testing.T) {
 
 func TestDecodingBadJSON(t *testing.T) {
 	t.Parallel()
-
 	c := newMockClient(&Options{APIKey: "testAPIKey"},
 		newMockHandler(http.StatusOK, `data":["key":"value"]}`, nil))
 	_, err := c.GetPhoto(12345)
@@ -303,7 +227,6 @@ func TestBadBuildQueryString(t *testing.T) {
 
 func TestBadIsZero(t *testing.T) {
 	t.Parallel()
-
 	eFalse, err := isZero(PhotosResponse{})
 	if err == nil {
 		t.Error("expected error but got nil")
@@ -314,7 +237,6 @@ func TestBadIsZero(t *testing.T) {
 
 func TestBadDecodeMediaFromRawMessage(t *testing.T) {
 	t.Parallel()
-
 	_, err := decodeMediaFromRawMessage([]byte("{\"data\": { \"notype\": []}}"))
 	if err == nil {
 		t.Error("expected error but got nil")

@@ -2,7 +2,6 @@ package pexels
 
 import (
 	"encoding/json"
-	"net/http"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -10,27 +9,7 @@ import (
 
 func TestGetPhoto(t *testing.T) {
 	t.Parallel()
-
-	tcs := []struct {
-		statusCode int
-		opts       *Options
-		ID         uint64
-		respBody   string
-	}{
-		{
-			http.StatusOK,
-			&Options{APIKey: "testAPIKey"},
-			2014422,
-			`{"id":2014422,"width":3024,"height":3024,"url":"https://www.pexels.com/photo/brown-rocks-during-golden-hour-2014422/","photographer":"Joey Farina","photographer_url":"https://www.pexels.com/@joey","photographer_id":680589,"avg_color":"#978E82","src":{"original":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg","large2x":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress\u0026cs=tinysrgb\u0026dpr=2\u0026h=650\u0026w=940","large":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=650\u0026w=940","medium":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=350","small":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=130","portrait":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress\u0026cs=tinysrgb\u0026fit=crop\u0026h=1200\u0026w=800","landscape":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress\u0026cs=tinysrgb\u0026fit=crop\u0026h=627\u0026w=1200","tiny":"https://images.pexels.com/photos/2014422/pexels-photo-2014422.jpeg?auto=compress\u0026cs=tinysrgb\u0026dpr=1\u0026fit=crop\u0026h=200\u0026w=280"},"liked":false}`,
-		},
-		{
-			http.StatusNotFound,
-			&Options{APIKey: "testAPIKey"},
-			0,
-			`{"status":404,"error":"Not Found"}`,
-		},
-	}
-	for _, tc := range tcs {
+	for _, tc := range getPhotoTT {
 		c := newMockClient(tc.opts,
 			newMockHandler(tc.statusCode, tc.respBody, nil))
 		aResp, err := c.GetPhoto(tc.ID)
@@ -50,21 +29,7 @@ func TestGetPhoto(t *testing.T) {
 
 func TestGetCuratedPhotos(t *testing.T) {
 	t.Parallel()
-
-	tcs := []struct {
-		statusCode int
-		opts       *Options
-		params     *CuratedPhotosParams
-		respBody   string
-	}{
-		{
-			http.StatusOK,
-			&Options{APIKey: "testAPIKey"},
-			&CuratedPhotosParams{Page: 2, PerPage: 5},
-			`{"page":2,"per_page":5,"photos":[{"id":8536867,"width":4291,"height":5364,"url":"https://www.pexels.com/photo/silhouette-of-man-raising-his-hands-8536867/","photographer":"Trarete","photographer_url":"https://www.pexels.com/@trarete-73723862","photographer_id":73723862,"avg_color":"#405580","src":{"original":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg","large2x":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg?auto=compress\u0026cs=tinysrgb\u0026dpr=2\u0026h=650\u0026w=940","large":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=650\u0026w=940","medium":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=350","small":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=130","portrait":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg?auto=compress\u0026cs=tinysrgb\u0026fit=crop\u0026h=1200\u0026w=800","landscape":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg?auto=compress\u0026cs=tinysrgb\u0026fit=crop\u0026h=627\u0026w=1200","tiny":"https://images.pexels.com/photos/8536867/pexels-photo-8536867.jpeg?auto=compress\u0026cs=tinysrgb\u0026dpr=1\u0026fit=crop\u0026h=200\u0026w=280"},"liked":false}],"total_results":8000,"next_page":"https://api.pexels.com/v1/curated/?page=3\u0026per_page=5","prev_page":"https://api.pexels.com/v1/curated/?page=1\u0026per_page=5"}`,
-		},
-	}
-	for _, tc := range tcs {
+	for _, tc := range getCuratedPhotosTT {
 		c := newMockClient(tc.opts,
 			newMockHandler(tc.statusCode, tc.respBody, nil))
 		aResp, err := c.GetCuratedPhotos(tc.params)
@@ -90,47 +55,7 @@ func TestGetCuratedPhotos(t *testing.T) {
 
 func TestSearchPhotos(t *testing.T) {
 	t.Parallel()
-
-	tcs := []struct {
-		statusCode int
-		opts       *Options
-		params     *PhotoSearchParams
-		respBody   string
-	}{
-		{
-			http.StatusOK,
-			&Options{APIKey: "testAPIKey"},
-			&PhotoSearchParams{Query: ""},
-			``,
-		},
-		{
-			http.StatusForbidden,
-			&Options{APIKey: "invalid-APIKey"},
-			&PhotoSearchParams{Query: "City Lights"},
-			`{"error": "Access to this API has been disallowed"}`,
-		},
-		{
-			http.StatusOK,
-			&Options{APIKey: "testAPIKey"},
-			&PhotoSearchParams{Query: "random-garbagepaosdjfpoijqwpoeijo!@#$%:;(*)"},
-			`{"page":1,"per_page":1,"photos":[],"total_results":0,"url":"https://api-server.pexels.com/search/videos/random-garbagepaosdjfpoijqwpoeijo!@#$%:;(*)/"}`,
-		},
-		{
-			http.StatusOK,
-			&Options{APIKey: "testAPIKey"},
-			&PhotoSearchParams{Query: "nature",
-				Locale:      UK_UA,
-				Orientation: Landscape,
-				Size:        Medium,
-				Color:       Red,
-				Page:        1,
-				PerPage:     1,
-			},
-			`{"page":1,"per_page":1,"photos":[{"id":130988,"width":6000,"height":3376,"url":"https://www.pexels.com/photo/red-flowers-130988/","photographer":"Mike","photographer_url":"https://www.pexels.com/@mikebirdy","photographer_id":20649,"avg_color":"#82251B","src":{"original":"https://images.pexels.com/photos/130988/pexels-photo-130988.jpeg","large2x":"https://images.pexels.com/photos/130988/pexels-photo-130988.jpeg?auto=compress\u0026cs=tinysrgb\u0026dpr=2\u0026h=650\u0026w=940","large":"https://images.pexels.com/photos/130988/pexels-photo-130988.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=650\u0026w=940","medium":"https://images.pexels.com/photos/130988/pexels-photo-130988.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=350","small":"https://images.pexels.com/photos/130988/pexels-photo-130988.jpeg?auto=compress\u0026cs=tinysrgb\u0026h=130","portrait":"https://images.pexels.com/photos/130988/pexels-photo-130988.jpeg?auto=compress\u0026cs=tinysrgb\u0026fit=crop\u0026h=1200\u0026w=800","landscape":"https://images.pexels.com/photos/130988/pexels-photo-130988.jpeg?auto=compress\u0026cs=tinysrgb\u0026fit=crop\u0026h=627\u0026w=1200","tiny":"https://images.pexels.com/photos/130988/pexels-photo-130988.jpeg?auto=compress\u0026cs=tinysrgb\u0026dpr=1\u0026fit=crop\u0026h=200\u0026w=280"},"liked":false}],"total_results":8000,"next_page":"https://api.pexels.com/v1/search/?color=red\u0026page=2\u0026per_page=1\u0026query=nature\u0026size=medium"}`,
-		},
-	}
-
-	for _, tc := range tcs {
+	for _, tc := range searchPhotosTT {
 		c := newMockClient(tc.opts,
 			newMockHandler(tc.statusCode, tc.respBody, nil))
 		aResp, err := c.SearchPhotos(tc.params)
@@ -166,14 +91,11 @@ func TestSearchPhotos(t *testing.T) {
 
 func TestFailedCuratedPhotos(t *testing.T) {
 	t.Parallel()
-
 	options := Options{
 		APIKey:     "testAPIKey",
 		HTTPClient: &badMockHTTPClient{newMockHandler(0, "", nil)},
 	}
-	c := Client{
-		opts: options,
-	}
+	c := Client{opts: options}
 	params := CuratedPhotosParams{
 		Page:    2,
 		PerPage: 80,
@@ -192,14 +114,11 @@ func TestFailedCuratedPhotos(t *testing.T) {
 
 func TestFailedSearchPhotos(t *testing.T) {
 	t.Parallel()
-
 	options := Options{
 		APIKey:     "testAPIKey",
 		HTTPClient: &badMockHTTPClient{newMockHandler(0, "", nil)},
 	}
-	c := Client{
-		opts: options,
-	}
+	c := Client{opts: options}
 	params := PhotoSearchParams{
 		Query:       "Failure",
 		Locale:      UK_UA,
@@ -209,7 +128,6 @@ func TestFailedSearchPhotos(t *testing.T) {
 		Page:        1,
 		PerPage:     1,
 	}
-
 	zero, err := c.SearchPhotos(&params)
 	if err == nil {
 		t.Error("expected error but got nil")
