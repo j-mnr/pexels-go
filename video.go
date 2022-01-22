@@ -38,8 +38,10 @@ type PexelUser struct {
 	URL  string `json:"url"`
 }
 
+// Quality is the definition for a video
 type Quality string
 
+// Quality contants.
 const (
 	SD Quality = "sd"
 	HD Quality = "hd"
@@ -87,7 +89,7 @@ type VideoSearchParams struct {
 	// Landscape, Portrait, Square
 	Orientation Orientation `query:"orientation"`
 	// Large (24MP), Medium (12MP), Small (4MP)
-	Size Size `query:"size"`
+	Size    Size   `query:"size"`
 	Page    uint16 `query:"page,1"`
 	PerPage uint8  `query:"per_page,15"` // Max: 80
 }

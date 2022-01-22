@@ -1,5 +1,8 @@
 package pexels
 
+// Pagination is a common response struct for many endpoints that details how
+// to go to the previous and next pages as well as the total number of results,
+// what page you are on currently and how many results per page.
 type Pagination struct {
 	TotalResults uint32 `json:"total_results"`
 	Page         uint16 `json:"page"`
@@ -8,51 +11,61 @@ type Pagination struct {
 	NextPage     string `json:"next_page"` // Optional
 }
 
+// Orientation is the way the photo or video is oriented.
 type Orientation string
 
 const (
+	// Landscape is oriented horizontally
 	Landscape Orientation = "landscape"
-	Portrait  Orientation = "portrait"
-	Square    Orientation = "square"
+	// Portrait is oriented vertically
+	Portrait Orientation = "portrait"
+	// Square is oriented symetrically
+	Square Orientation = "square"
 )
 
+// Size is the minimum video or photo size
 type Size string
 
 const (
-	Large  Size = "large"
+	// Large 24MP for photos or 4K for videos
+	Large Size = "large"
+	// Medium 12MP for photos or Full HD for videos
 	Medium Size = "medium"
-	Small  Size = "small"
+	// Small 4MP for photos or HD for videos
+	Small Size = "small"
 )
 
+// Locale is the locale of the search you are performing.
 type Locale string
 
+// All of the Locales
 const (
-	EN_US Locale = "en-US"
-	PT_BR Locale = "pt-BR"
-	ES_ES Locale = "es-ES"
-	CA_ES Locale = "ca-ES"
-	DE_DE Locale = "de-DE"
-	IT_IT Locale = "it-IT"
-	FR_FR Locale = "fr-FR"
-	SV_SE Locale = "sv-SE"
-	ID_ID Locale = "id-ID"
-	PL_PL Locale = "pl-PL"
-	JA_JP Locale = "ja-JP"
-	ZH_TW Locale = "zh-TW"
-	ZH_CN Locale = "zh-CN"
-	KO_KR Locale = "ko-KR"
-	TH_TH Locale = "th-TH"
-	NL_NL Locale = "nl-NL"
-	HU_HU Locale = "hu-HU"
-	VI_VN Locale = "vi-VN"
-	CS_CZ Locale = "cs-CZ"
-	DA_DK Locale = "da-DK"
-	FI_FI Locale = "fi-FI"
-	UK_UA Locale = "uk-UA"
-	EL_GR Locale = "el-GR"
-	RO_RO Locale = "ro-RO"
-	NB_NO Locale = "nb-NO"
-	SK_SK Locale = "sk-SK"
-	TR_TR Locale = "tr-TR"
-	RU_RU Locale = "ru-RU"
+	EnUS Locale = "en-US"
+	PtBR Locale = "pt-BR"
+	EsES Locale = "es-ES"
+	CaES Locale = "ca-ES"
+	DeDE Locale = "de-DE"
+	ItIT Locale = "it-IT"
+	FrFR Locale = "fr-FR"
+	SvSE Locale = "sv-SE"
+	IdID Locale = "id-ID"
+	PlPL Locale = "pl-PL"
+	JaJP Locale = "ja-JP"
+	ZhTW Locale = "zh-TW"
+	ZhCN Locale = "zh-CN"
+	KoKR Locale = "ko-KR"
+	ThTH Locale = "th-TH"
+	NlNL Locale = "nl-NL"
+	HuHU Locale = "hu-HU"
+	ViVN Locale = "vi-VN"
+	CsCZ Locale = "cs-CZ"
+	DaDK Locale = "da-DK"
+	FiFI Locale = "fi-FI"
+	UkUA Locale = "uk-UA"
+	ElGR Locale = "el-GR"
+	RoRO Locale = "ro-RO"
+	NbNO Locale = "nb-NO"
+	SkSK Locale = "sk-SK"
+	TrTR Locale = "tr-TR"
+	RuRU Locale = "ru-RU"
 )

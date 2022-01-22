@@ -6,11 +6,12 @@ import (
 )
 
 const (
-	photoEndpoint = "/photos/"
-	searchPhotosEndpoint = "/search"
+	photoEndpoint         = "/photos/"
+	searchPhotosEndpoint  = "/search"
 	curatedPhotosEndpoint = "/curated"
 )
 
+// Photo is a JSON formatted version of a Pexels photo.
 type Photo struct {
 	ID              uint64              `json:"id"`
 	Width           uint16              `json:"width"`
@@ -25,14 +26,20 @@ type Photo struct {
 	Liked           bool                `json:"liked"` // Optional
 }
 
-func (p *Photo) isMedia()          {}
+func (p *Photo) isMedia() {}
+
+// MediaType always returns the string "Photo"
 func (p *Photo) MediaType() string { return photoType }
 
+// PhotoResponse has a common attributes of an HTTP response and the
+// received photo.
 type PhotoResponse struct {
 	Common ResponseCommon
 	Photo  Photo
 }
 
+// PhotoSource is an assortment of different image sizes that can be used to
+// display a photo.
 type PhotoSource struct {
 	Original  string `json:"original"`
 	Large2x   string `json:"large2x"`   // W 940px X H 650px DPR 1
@@ -44,21 +51,27 @@ type PhotoSource struct {
 	Tiny      string `json:"tiny"`      // W 280px X H 200px
 }
 
+// PhotoPayload is a slice of photos with a pagination struct.
 type PhotoPayload struct {
 	Photos []Photo `json:"photos"`
 	Pagination
 }
 
+// PhotosResponse has a common attributes of an HTTP response and the
+// received photos.
 type PhotosResponse struct {
 	Common  ResponseCommon
 	Payload PhotoPayload
 }
 
+// CuratedPhotosParams allows you to pick which page in your collections you
+// start or how many per page you want.
 type CuratedPhotosParams struct {
 	Page    uint16 `query:"page,1"`
 	PerPage uint8  `query:"per_page,15"` // Max 80
 }
 
+// Color is the supported pexels' colors which you can search with.
 type Color string
 
 const (
@@ -76,15 +89,16 @@ const (
 	White     = "white"
 )
 
+// PhotoSearchParams requires a query. It has all of the available parameters
+// by which you can search for a photo.
 type PhotoSearchParams struct {
-	Query string `query:"query"` // Required
+	Query string `query:"query"`
 
-	// Optional parameters
+	// optional
 	Locale Locale `query:"locale"`
 	// Landscape, Portrait, Square
 	Orientation Orientation `query:"orientation"`
-	// Large (24MP), Medium (12MP), Small (4MP)
-	Size Size `query:"size"`
+	Size    Size   `query:"size"`
 	Color   Color  `query:"color"`
 	Page    uint16 `query:"page,1"`
 	PerPage uint8  `query:"per_page,15"` // Max: 80
