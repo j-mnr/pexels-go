@@ -11,35 +11,38 @@ const (
 	curatedPhotosEndpoint = "/curated"
 )
 
-// Photo is a JSON formatted version of a Pexels photo.
+// Photo is the base data structure returned when consuming Pexels API Photo
+// endpoints.
 type Photo struct {
-	ID              uint64              `json:"id"`
-	Width           uint16              `json:"width"`
-	Height          uint16              `json:"height"`
-	URL             string              `json:"url"`
-	Photographer    string              `json:"photographer"`
-	PhotographerURL string              `json:"photographer_url"`
-	PhotographerID  uint64              `json:"photographer_id"`
-	AvgColor        string              `json:"avg_color"` // In hex e.g. #978E82
-	Type            CollectionMediaType `json:"type,omitempty"`
-	Src             PhotoSource         `json:"src"`   // URLs of images
-	Liked           bool                `json:"liked"` // Optional
+	ID              uint64      `json:"id"`
+	Width           uint16      `json:"width"`
+	Height          uint16      `json:"height"`
+	URL             string      `json:"url"`
+	Photographer    string      `json:"photographer"`
+	PhotographerURL string      `json:"photographer_url"`
+	PhotographerID  uint64      `json:"photographer_id"`
+	AvgColor        string      `json:"avg_color"`
+	Type            string      `json:"type,omitempty"`
+	Src             PhotoSource `json:"src"`
+
+	Liked bool `json:"liked"`
 }
 
 func (p *Photo) isMedia() {}
 
-// MediaType always returns the string "Photo"
+// MediaType is used to identify which type of Media a resource is.
+// It always returns "Photo"
 func (p *Photo) MediaType() string { return photoType }
 
 // PhotoResponse has a common attributes of an HTTP response and the
-// received photo.
+// received Photo.
 type PhotoResponse struct {
 	Common ResponseCommon
 	Photo  Photo
 }
 
 // PhotoSource is an assortment of different image sizes that can be used to
-// display a photo.
+// display a Photo.
 type PhotoSource struct {
 	Original  string `json:"original"`
 	Large2x   string `json:"large2x"`   // W 940px X H 650px DPR 1
@@ -51,14 +54,14 @@ type PhotoSource struct {
 	Tiny      string `json:"tiny"`      // W 280px X H 200px
 }
 
-// PhotoPayload is a slice of photos with a pagination struct.
+// PhotoPayload is a slice of Photo with Pagination.
 type PhotoPayload struct {
 	Photos []Photo `json:"photos"`
 	Pagination
 }
 
-// PhotosResponse has a common attributes of an HTTP response and the
-// received photos.
+// PhotosResponse has common values of an HTTP response and the received
+// PhotoPayload response.
 type PhotosResponse struct {
 	Common  ResponseCommon
 	Payload PhotoPayload
@@ -71,40 +74,21 @@ type CuratedPhotosParams struct {
 	PerPage uint8  `query:"per_page,15"` // Max 80
 }
 
-// Color is the supported pexels' colors which you can search with.
-type Color string
-
-const (
-	Red       = "red"
-	Orange    = "orange"
-	Yellow    = "yellow"
-	Green     = "green"
-	Turquoise = "turquoise"
-	Blue      = "blue"
-	Violet    = "violet"
-	Pink      = "pink"
-	Brown     = "brown"
-	Black     = "black"
-	Gray      = "gray"
-	White     = "white"
-)
-
-// PhotoSearchParams requires a query. It has all of the available parameters
+// PhotoSearchParams requires Query. It has all of the available parameters
 // by which you can search for a photo.
 type PhotoSearchParams struct {
-	Query string `query:"query"`
+	Query string `query:"query"` // required
 
-	// optional
-	Locale Locale `query:"locale"`
-	// Landscape, Portrait, Square
-	Orientation Orientation `query:"orientation"`
-	Size    Size   `query:"size"`
-	Color   Color  `query:"color"`
+	General
+	// the supported pexels colors which you can search with are:
+	// red, orange, yellow, green, turquoise, blue, violet, pink, brown, black,
+	// gray, white.
+	Color   string `query:"color"`
 	Page    uint16 `query:"page,1"`
 	PerPage uint8  `query:"per_page,15"` // Max: 80
 }
 
-// Retreives a photo by its ID found at the end of its URL
+// GetPhoto retreives a photo by its ID found at the end of its URL
 func (c *Client) GetPhoto(photoID uint64) (PhotoResponse, error) {
 	resp, err := c.get(fmt.Sprint(photoEndpoint, photoID), "", &Photo{})
 	if err != nil {
@@ -116,8 +100,9 @@ func (c *Client) GetPhoto(photoID uint64) (PhotoResponse, error) {
 	return pr, nil
 }
 
-// Retrieves the current Curated list, updated hourly by Pexels. If nil is
-// passed it will default to the first page and return 15 photos.
+// GetCuratedPhotos retrieves the current Curated list, updated hourly by
+// Pexels. If nil is passed it will default to the first page and return 15
+// photos.
 func (c *Client) GetCuratedPhotos(params *CuratedPhotosParams) (PhotosResponse,
 	error) {
 
@@ -131,7 +116,9 @@ func (c *Client) GetCuratedPhotos(params *CuratedPhotosParams) (PhotosResponse,
 	return cr, nil
 }
 
-// Returns an error if the Query parameter has no value
+// SearchPhotos returns a slice of Photos 15 photos by defualt.
+// The PhotoSearchParams.Query is required and SearchPhotos will return an
+// error if it is nil.
 func (c *Client) SearchPhotos(params *PhotoSearchParams) (PhotosResponse,
 	error) {
 
