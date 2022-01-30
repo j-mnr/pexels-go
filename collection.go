@@ -8,7 +8,6 @@ import (
 // Media is either a Photo or a Video struct.
 type Media interface {
 	MediaType() string
-
 	isMedia()
 }
 
@@ -17,7 +16,8 @@ const (
 	photoType = "Photo"
 )
 
-// Collection is a JSON formatted version of a Pexels collection.
+// Collection is the base data structure returned when consuming Pexels API
+// Collection endpoints.
 type Collection struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
@@ -71,20 +71,9 @@ type CollectionsResponse struct {
 // CollectionParams allows you to pick which page in your collections you start
 // or how many per page you want.
 type CollectionParams struct {
-	// optional
 	Page    uint16 `query:"page,1"`
 	PerPage uint8  `query:"per_page,15"` // Max: 80
 }
-
-// CollectionMediaType is a constant to which type of media you want.
-type CollectionMediaType string
-
-const (
-  // VideoType ...
-	VideoType CollectionMediaType = "videos"
-  // PhotoType ...
-	PhotoType CollectionMediaType = "photos"
-)
 
 // CollectionMediaParams is the way to get back a single collection. If you're
 // looking for a certain Media type (photos or videos) it can be specified
@@ -92,10 +81,10 @@ const (
 type CollectionMediaParams struct {
 	ID string
 
-	// optional
-	Type    CollectionMediaType `query:"type"`
-	Page    uint16              `query:"page,1"`
-	PerPage uint8               `query:"per_page,15"` // Max: 80
+	// Supported types are: videos, photos.
+	Type    string `query:"type"`
+	Page    uint16 `query:"page,1"`
+	PerPage uint8  `query:"per_page,15"` // Max: 80
 }
 
 // GetCollection returns all the media based on parameters provided, within a
