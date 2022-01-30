@@ -131,23 +131,9 @@ func TestSetRequestHeaders(t *testing.T) {
 	}
 }
 
-func TestSetUserAgent(t *testing.T) {
-	t.Parallel()
-	c, err := New(Options{APIKey: "testAPIKey"})
-	if err != nil {
-		t.Errorf("Did not expect an error, got \"%s\"", err.Error())
-	}
-	ua := "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
-	c.SetUserAgent(ua)
-	if c.opts.UserAgent != ua {
-		t.Errorf("expected accessToken to be \"%s\", got \"%s\"", ua,
-			c.opts.UserAgent)
-	}
-}
-
 func TestCopyCommon(t *testing.T) {
 	t.Parallel()
-	var sourceResp Response
+	var sourceResp response
 	testStatusCode := 200
 	testHeaders := http.Header{}
 	testHeaders.Set("Content-Type", "application/json")
@@ -155,7 +141,7 @@ func TestCopyCommon(t *testing.T) {
 	sourceResp.Common.StatusCode = testStatusCode
 	sourceResp.Common.Header = testHeaders
 
-	var targetResp Response
+	var targetResp response
 	sourceResp.copyCommon(&targetResp.Common)
 	if targetResp.Common.StatusCode != testStatusCode {
 		t.Errorf("expected status code to be \"%d\", got \"%d\"", testStatusCode,

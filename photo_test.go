@@ -120,13 +120,16 @@ func TestFailedSearchPhotos(t *testing.T) {
 	}
 	c := Client{opts: options}
 	params := PhotoSearchParams{
-		Query:       "Failure",
-		Locale:      UK_UA,
-		Orientation: Landscape,
-		Size:        Medium,
-		Color:       Red,
-		Page:        1,
-		PerPage:     1,
+		Query: "Failure",
+
+		General: General{
+			Locale:      "uk-ua",
+			Orientation: "landscape",
+			Size:        "medium",
+		},
+		Color:   "red",
+		Page:    1,
+		PerPage: 1,
 	}
 	zero, err := c.SearchPhotos(&params)
 	if err == nil {

@@ -64,7 +64,7 @@ func TestFailedGetCollection(t *testing.T) {
 	c := Client{opts: options}
 	params := CollectionMediaParams{
 		ID:      "WONTWORK",
-		Type:    VideoType,
+		Type:    "videos",
 		Page:    22,
 		PerPage: 80,
 	}

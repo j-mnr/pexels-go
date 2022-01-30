@@ -155,12 +155,14 @@ func TestFailedSearchVideos(t *testing.T) {
 	}
 	c := Client{opts: options}
 	params := VideoSearchParams{
-		Query:       "Failure",
-		Locale:      UK_UA,
-		Orientation: Landscape,
-		Size:        Medium,
-		Page:        1,
-		PerPage:     1,
+		Query: "Failure",
+		General: General{
+			Locale:      "uk-ua",
+			Orientation: "landscape",
+			Size:        "medium",
+		},
+		Page:    1,
+		PerPage: 1,
 	}
 	zero, err := c.SearchVideos(&params)
 	if err == nil {
