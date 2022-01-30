@@ -8,33 +8,38 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 const (
-	// Base URL for both Photos and Collections use VideoBaseURL if you need
-	// videos
+	// PhotoBaseURL is used to access both Photos and Collections
 	PhotoBaseURL = "https://api.pexels.com/v1"
+	// VideoBaseURL is used to access videos
 	VideoBaseURL = "https://api.pexels.com/videos"
 )
 
+// HTTPClient ...
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
+// Client is the Pexels API Client that allows you to interact with the Pexels
+// endpoints for photos, videos, and collections.
 type Client struct {
-	mu   sync.RWMutex
 	opts Options
 }
 
+// Options are the options you can pass in when creating a new pexels Client.
 type Options struct {
-	APIKey        string
-	UserAgent     string
-	HTTPClient    HTTPClient
+	APIKey string // required
+
+	UserAgent  string
+	HTTPClient HTTPClient
+
 	photosBaseURL string
 	videoBaseURL  string
 }
 
+// ResponseCommon holds the common values found inside of a HTTP response.
 type ResponseCommon struct {
 	StatusCode int         `json:"status_code"`
 	Status     string      `json:"status"`
@@ -46,32 +51,36 @@ func (rc *ResponseCommon) convertHeaderToInt(h string) int {
 	return i
 }
 
+// GetRateLimit returns the total request limit for the monthly period.
 func (rc *ResponseCommon) GetRateLimit() int {
 	return rc.convertHeaderToInt(rc.Header.Get("X-Ratelimit-Limit"))
 }
 
+// GetRateLimitRemaining returns how many requests you have left that you can
+// make for the monthly period.
 func (rc *ResponseCommon) GetRateLimitRemaining() int {
 	return rc.convertHeaderToInt(rc.Header.Get("X-Ratelimit-Remaining"))
 }
 
-// Returns a UNIX timestamp of when the current monthly period will roll over
+// GetRateLimitReset returns a UNIX timestamp of when the current monthly
+// period will roll over
 func (rc *ResponseCommon) GetRateLimitReset() int {
 	return rc.convertHeaderToInt(rc.Header.Get("X-Ratelimit-Reset"))
 }
 
-type Response struct {
+type response struct {
 	Common ResponseCommon
 	Data   interface{}
 }
 
-func (r *Response) copyCommon(rc *ResponseCommon) {
+func (r *response) copyCommon(rc *ResponseCommon) {
 	rc.StatusCode = r.Common.StatusCode
 	rc.Header = r.Common.Header
 	rc.Status = r.Common.Status
 }
 
-// Returns a new Pexels API client. If the Options provided does not contain an
-// API Key an error will be returned
+// New returns a new Pexels API client. If the Options provided does not
+// contain an API Key an error will be returned.
 func New(options Options) (*Client, error) {
 	if options.APIKey == "" {
 		return nil, errors.New("An API Key is required")
@@ -87,25 +96,25 @@ func New(options Options) (*Client, error) {
 	return client, nil
 }
 
-func (c *Client) get(path string, reqData, respData interface{}) (Response,
+func (c *Client) get(path string, reqData, respData interface{}) (response,
 	error) {
 
-	response := Response{}
+	res := response{}
 	if respData != nil {
-		response.Data = respData
+		res.Data = respData
 	}
 	req, err := c.newRequest(path, reqData)
 	if err != nil {
-		return Response{}, err
+		return response{}, err
 	}
-	err = c.doRequest(req, &response)
+	err = c.doRequest(req, &res)
 	if err != nil {
-		return Response{}, err
+		return response{}, err
 	}
-	return response, nil
+	return res, nil
 }
 
-func (c *Client) doRequest(req *http.Request, resp *Response) error {
+func (c *Client) doRequest(req *http.Request, resp *response) error {
 	c.setRequestHeaders(req)
 	httpResp, err := c.opts.HTTPClient.Do(req)
 	if err != nil {
@@ -198,12 +207,6 @@ func (c *Client) setRequestHeaders(req *http.Request) {
 	if opts.UserAgent != "" {
 		req.Header.Set("User-Agent", opts.UserAgent)
 	}
-}
-
-func (c *Client) SetUserAgent(userAgent string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.opts.UserAgent = userAgent
 }
 
 func buildQueryString(req *http.Request, v interface{}) (string, error) {
