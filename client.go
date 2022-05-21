@@ -6,15 +6,16 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
 const (
-	// PhotoBaseURL is used to access both Photos and Collections
-	PhotoBaseURL = "https://api.pexels.com/v1"
-	// VideoBaseURL is used to access videos
-	VideoBaseURL = "https://api.pexels.com/videos"
+	// BaseURL is the Pexels API starting point URL for all Media.
+	BaseURL = "https://api.pexels.com/"
+	// PhotoBaseURL is used to access both Photos and Collections.
+	PhotoBaseURL = BaseURL + "v1"
+	// VideoBaseURL is used to access Videos.
+	VideoBaseURL = BaseURL + "videos"
 )
 
 // HTTPClient ...
@@ -25,75 +26,54 @@ type HTTPClient interface {
 // Client is the Pexels API Client that allows you to interact with the Pexels
 // endpoints for photos, videos, and collections.
 type Client struct {
-	opts Options
-}
-
-// Options are the options you can pass in when creating a new pexels Client.
-type Options struct {
 	APIKey string // required
 
-	UserAgent  string
 	HTTPClient HTTPClient
 
-	photosBaseURL string
-	videoBaseURL  string
+	PhotoBaseURL string // Pre-set with pexels.New
+	VideoBaseURL string // Pre-set with pexels.New
 }
 
-// ResponseCommon holds the common values found inside of a HTTP response.
-type ResponseCommon struct {
-	StatusCode int         `json:"status_code"`
-	Status     string      `json:"status"`
-	Header     http.Header `json:"headers"`
-}
-
-func (rc *ResponseCommon) convertHeaderToInt(h string) int {
-	i, _ := strconv.Atoi(h)
-	return i
-}
-
-// GetRateLimit returns the total request limit for the monthly period.
-func (rc *ResponseCommon) GetRateLimit() int {
-	return rc.convertHeaderToInt(rc.Header.Get("X-Ratelimit-Limit"))
-}
-
-// GetRateLimitRemaining returns how many requests you have left that you can
-// make for the monthly period.
-func (rc *ResponseCommon) GetRateLimitRemaining() int {
-	return rc.convertHeaderToInt(rc.Header.Get("X-Ratelimit-Remaining"))
-}
-
-// GetRateLimitReset returns a UNIX timestamp of when the current monthly
-// period will roll over
-func (rc *ResponseCommon) GetRateLimitReset() int {
-	return rc.convertHeaderToInt(rc.Header.Get("X-Ratelimit-Reset"))
-}
-
-type response struct {
-	Common ResponseCommon
-	Data   interface{}
-}
-
-func (r *response) copyCommon(rc *ResponseCommon) {
-	rc.StatusCode = r.Common.StatusCode
-	rc.Header = r.Common.Header
-	rc.Status = r.Common.Status
-}
-
-// New returns a new Pexels API client. If the Options provided does not
-// contain an API Key an error will be returned.
-func New(options Options) (*Client, error) {
-	if options.APIKey == "" {
+// New returns a Pexels API client. If WithAPIKey is not passed an error will
+// be returned.
+func New(opts ...Option) (*Client, error) {
+	const baseURL = "https://api.pexels.com/"
+	c := &Client{
+		HTTPClient:   http.DefaultClient,
+		PhotoBaseURL: PhotoBaseURL,
+		VideoBaseURL: VideoBaseURL,
+	}
+	for _, o := range opts {
+		o(c)
+	}
+	if c.APIKey == "" {
 		return nil, errors.New("An API Key is required")
 	}
-	if options.HTTPClient == nil {
-		options.HTTPClient = http.DefaultClient
-	}
-	options.videoBaseURL = "https://api.pexels.com/"
-	options.photosBaseURL = PhotoBaseURL
-	client := &Client{
-		opts: options,
-	}
-	return client, nil
+	return c, nil
+}
+
+// Option are the options you can pass in when creating a new pexels Client.
+// All Option function names start with `With`
+type Option func(*Client)
+
+// WithAPIKey ...
+func WithAPIKey(key string) Option {
+	return func(c *Client) { c.APIKey = key }
+}
+
+// WithHTTPClient ...
+func WithHTTPClient(client HTTPClient) Option {
+	return func(c *Client) { c.HTTPClient = client }
+}
+
+// WithPhotoBaseURL ...
+func WithPhotoBaseURL(url string) Option {
+	return func(c *Client) { c.PhotoBaseURL = url }
+}
+
+// WithVideoBaseURL ...
+func WithVideoBaseURL(url string) Option {
+	return func(c *Client) { c.VideoBaseURL = url }
 }
 
 func (c *Client) get(path string, reqData, respData interface{}) (response,
@@ -116,7 +96,7 @@ func (c *Client) get(path string, reqData, respData interface{}) (response,
 
 func (c *Client) doRequest(req *http.Request, resp *response) error {
 	c.setRequestHeaders(req)
-	httpResp, err := c.opts.HTTPClient.Do(req)
+	httpResp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -180,9 +160,9 @@ func (c *Client) newRequest(path string, data interface{}) (*http.Request,
 
 	url := ""
 	if strings.HasPrefix(path, "/videos") {
-		url = c.opts.videoBaseURL + path
+		url = c.VideoBaseURL + path
 	} else {
-		url = c.opts.photosBaseURL + path
+		url = c.PhotoBaseURL + path
 	}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -200,13 +180,8 @@ func (c *Client) newRequest(path string, data interface{}) (*http.Request,
 }
 
 func (c *Client) setRequestHeaders(req *http.Request) {
-	opts := c.opts
-
-	req.Header.Set("Authorization", opts.APIKey)
+	req.Header.Set("Authorization", c.APIKey)
 	req.Header.Set("Accept", "application/json")
-	if opts.UserAgent != "" {
-		req.Header.Set("User-Agent", opts.UserAgent)
-	}
 }
 
 func buildQueryString(req *http.Request, v interface{}) (string, error) {

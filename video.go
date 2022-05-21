@@ -99,7 +99,7 @@ type VideoSearchParams struct {
 }
 
 // GetVideo returns a Video based on its ID. It does not return an error if the
-// Video could not be found by its ID, only if something occurred during
+// Video could not be found by its ID, only if something went wrong while
 // getting the resource.
 func (c *Client) GetVideo(videoID uint64) (VideoResponse, error) {
 	resp, err := c.get(fmt.Sprint(videoEndpoint, videoID), "", &Video{})

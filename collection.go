@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// Media is either a Photo or a Video struct.
+// Media is either Photo or Video.
 type Media interface {
 	MediaType() string
 	isMedia()
@@ -28,7 +28,7 @@ type Collection struct {
 	VideosCount uint16 `json:"videos_count"`
 }
 
-// MediaPayload is all of the media (photos and videos) within a single
+// MediaPayload is all of the Media (photos and videos) within a single
 // collection.
 type MediaPayload struct {
 	ID    string  `json:"id"`
@@ -44,8 +44,8 @@ type CollectionPayload struct {
 }
 
 // MediaResponse is all media given back from a single collection, even though
-// videos and photos are in the response, it does not mean they will have any
-// contents if your collection doesn't have either.
+// videos and photos are in the response, they may be empty slices if your
+// collection doesn't have either.
 type MediaResponse struct {
 	Common ResponseCommon
 	ID     string
@@ -54,22 +54,22 @@ type MediaResponse struct {
 	Pagination
 }
 
-// CollectionResponse has a common attributes of an HTTP response and the
+// CollectionResponse has a common attributes of a HTTP response and the
 // received collection.
 type CollectionResponse struct {
 	Common     ResponseCommon
 	Collection Collection
 }
 
-// CollectionsResponse has a common attributes of an HTTP response and the
+// CollectionsResponse has a common attributes of a HTTP response and the
 // received collections.
 type CollectionsResponse struct {
 	Common  ResponseCommon
 	Payload CollectionPayload
 }
 
-// CollectionParams allows you to pick which page in your collections you start
-// or how many per page you want.
+// CollectionParams allows you to pick which page to start at in your
+// collections and how many per page you want.
 type CollectionParams struct {
 	Page    uint16 `query:"page,1"`
 	PerPage uint8  `query:"per_page,15"` // Max: 80
