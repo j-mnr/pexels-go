@@ -48,9 +48,8 @@ type PexelUser struct {
 
 // VideoFile is a version of a Video.
 type VideoFile struct {
-	ID uint64 `json:"id"`
-	// supported qualities are: sd, hd.
-	Quality  string `json:"quality"`
+	ID       uint64 `json:"id"`
+	Quality  string `json:"quality"` // supported qualities are: sd, hd.
 	FileType string `json:"file_type"`
 	Width    uint16 `json:"width"`
 	Height   uint16 `json:"height"`
@@ -61,7 +60,7 @@ type VideoFile struct {
 type VideoPicture struct {
 	ID      uint64 `json:"id"`
 	Picture string `json:"picture"`
-	NR      uint8  `json:"nr"` // Index of Object in Slice
+	NR      uint8  `json:"nr"` // Index of Picture in Slice
 }
 
 // VideoPayload is a slice of Video with Pagination.
