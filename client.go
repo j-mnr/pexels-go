@@ -23,9 +23,9 @@ type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-// Client is the Pexels API Client that allows you to interact with the Pexels
+// client is the Pexels API client that allows you to interact with the Pexels
 // endpoints for photos, videos, and collections.
-type Client struct {
+type client struct {
 	APIKey string // required
 
 	HTTPClient HTTPClient
@@ -36,9 +36,10 @@ type Client struct {
 
 // New returns a Pexels API client. If WithAPIKey is not passed an error will
 // be returned.
-func New(opts ...Option) (*Client, error) {
+func New(apiKey string, opts ...Option) (*client, error) {
 	const baseURL = "https://api.pexels.com/"
-	c := &Client{
+	c := &client{
+		APIKey:       apiKey,
 		HTTPClient:   http.DefaultClient,
 		PhotoBaseURL: PhotoBaseURL,
 		VideoBaseURL: VideoBaseURL,
@@ -54,29 +55,24 @@ func New(opts ...Option) (*Client, error) {
 
 // Option are the options you can pass in when creating a new pexels Client.
 // All Option function names start with `With`
-type Option func(*Client)
-
-// WithAPIKey ...
-func WithAPIKey(key string) Option {
-	return func(c *Client) { c.APIKey = key }
-}
+type Option func(*client)
 
 // WithHTTPClient ...
-func WithHTTPClient(client HTTPClient) Option {
-	return func(c *Client) { c.HTTPClient = client }
+func WithHTTPClient(httpC HTTPClient) Option {
+	return func(c *client) { c.HTTPClient = httpC }
 }
 
 // WithPhotoBaseURL ...
 func WithPhotoBaseURL(url string) Option {
-	return func(c *Client) { c.PhotoBaseURL = url }
+	return func(c *client) { c.PhotoBaseURL = url }
 }
 
 // WithVideoBaseURL ...
 func WithVideoBaseURL(url string) Option {
-	return func(c *Client) { c.VideoBaseURL = url }
+	return func(c *client) { c.VideoBaseURL = url }
 }
 
-func (c *Client) get(path string, reqData, respData interface{}) (response,
+func (c *client) get(path string, reqData, respData interface{}) (response,
 	error) {
 
 	res := response{}
@@ -94,7 +90,7 @@ func (c *Client) get(path string, reqData, respData interface{}) (response,
 	return res, nil
 }
 
-func (c *Client) doRequest(req *http.Request, resp *response) error {
+func (c *client) doRequest(req *http.Request, resp *response) error {
 	c.setRequestHeaders(req)
 	httpResp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -155,7 +151,7 @@ func decodeMediaFromRawMessage(rawMsg []byte) (Media, error) {
 	return m, nil
 }
 
-func (c *Client) newRequest(path string, data interface{}) (*http.Request,
+func (c *client) newRequest(path string, data interface{}) (*http.Request,
 	error) {
 
 	url := ""
@@ -179,7 +175,7 @@ func (c *Client) newRequest(path string, data interface{}) (*http.Request,
 	return req, nil
 }
 
-func (c *Client) setRequestHeaders(req *http.Request) {
+func (c *client) setRequestHeaders(req *http.Request) {
 	req.Header.Set("Authorization", c.APIKey)
 	req.Header.Set("Accept", "application/json")
 }

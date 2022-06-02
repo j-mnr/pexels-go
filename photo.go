@@ -89,7 +89,7 @@ type PhotoSearchParams struct {
 }
 
 // GetPhoto retreives a photo by its ID found at the end of its URL
-func (c *Client) GetPhoto(photoID uint64) (PhotoResponse, error) {
+func (c *client) GetPhoto(photoID uint64) (PhotoResponse, error) {
 	resp, err := c.get(fmt.Sprint(photoEndpoint, photoID), "", &Photo{})
 	if err != nil {
 		return PhotoResponse{}, err
@@ -103,7 +103,7 @@ func (c *Client) GetPhoto(photoID uint64) (PhotoResponse, error) {
 // GetCuratedPhotos retrieves the current Curated list, updated hourly by
 // Pexels. If nil is passed it will default to the first page and return 15
 // photos.
-func (c *Client) GetCuratedPhotos(params *CuratedPhotosParams) (PhotosResponse,
+func (c *client) GetCuratedPhotos(params *CuratedPhotosParams) (PhotosResponse,
 	error) {
 
 	resp, err := c.get(curatedPhotosEndpoint, params, &PhotoPayload{})
@@ -119,7 +119,7 @@ func (c *Client) GetCuratedPhotos(params *CuratedPhotosParams) (PhotosResponse,
 // SearchPhotos returns a slice of Photos 15 photos by defualt.
 // The PhotoSearchParams.Query is required and SearchPhotos will return an
 // error if it is nil.
-func (c *Client) SearchPhotos(params *PhotoSearchParams) (PhotosResponse,
+func (c *client) SearchPhotos(params *PhotoSearchParams) (PhotosResponse,
 	error) {
 
 	if params == nil || params.Query == "" {

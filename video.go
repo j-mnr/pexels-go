@@ -101,7 +101,7 @@ type VideoSearchParams struct {
 // GetVideo returns a Video based on its ID. It does not return an error if the
 // Video could not be found by its ID, only if something went wrong while
 // getting the resource.
-func (c *Client) GetVideo(videoID uint64) (VideoResponse, error) {
+func (c *client) GetVideo(videoID uint64) (VideoResponse, error) {
 	resp, err := c.get(fmt.Sprint(videoEndpoint, videoID), "", &Video{})
 	if err != nil {
 		return VideoResponse{}, err
@@ -112,7 +112,7 @@ func (c *Client) GetVideo(videoID uint64) (VideoResponse, error) {
 }
 
 // GetPopularVideos returns the current popular pexels videos.
-func (c *Client) GetPopularVideos(params *PopularVideoParams) (VideosResponse,
+func (c *client) GetPopularVideos(params *PopularVideoParams) (VideosResponse,
 	error) {
 
 	resp, err := c.get(popularVideosEndpoint, params, &VideoPayload{})
@@ -126,7 +126,7 @@ func (c *Client) GetPopularVideos(params *PopularVideoParams) (VideosResponse,
 
 // SearchVideos enables you to search the entire pexels database for any
 // subject that you would like and receive videos on that subject.
-func (c *Client) SearchVideos(params *VideoSearchParams) (VideosResponse,
+func (c *client) SearchVideos(params *VideoSearchParams) (VideosResponse,
 	error) {
 
 	if params == nil || params.Query == "" {

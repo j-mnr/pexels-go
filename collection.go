@@ -89,7 +89,7 @@ type CollectionMediaParams struct {
 
 // GetCollection returns all the media based on parameters provided, within a
 // single collection.
-func (c *Client) GetCollection(params *CollectionMediaParams) (
+func (c *client) GetCollection(params *CollectionMediaParams) (
 	MediaResponse, error) {
 
 	if params == nil || params.ID == "" {
@@ -117,7 +117,7 @@ func (c *Client) GetCollection(params *CollectionMediaParams) (
 }
 
 // GetCollections returns all of your collections.
-func (c *Client) GetCollections() (CollectionsResponse, error) {
+func (c *client) GetCollections() (CollectionsResponse, error) {
 	resp, err := c.get("/collections", "", &CollectionPayload{})
 	if err != nil {
 		return CollectionsResponse{}, err
