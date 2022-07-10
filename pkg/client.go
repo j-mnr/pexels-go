@@ -34,9 +34,12 @@ type client struct {
 	VideoBaseURL string // Pre-set with pexels.New
 }
 
-// New returns a Pexels API client. If WithAPIKey is not passed an error will
-// be returned.
+// New returns a Pexels API client with the provided API key. If the API key is
+// blank an error is returned.
 func New(apiKey string, opts ...Option) (*client, error) {
+	if apiKey == "" {
+		return nil, errors.New("An API Key is required")
+	}
 	const baseURL = "https://api.pexels.com/"
 	c := &client{
 		APIKey:       apiKey,
@@ -46,9 +49,6 @@ func New(apiKey string, opts ...Option) (*client, error) {
 	}
 	for _, o := range opts {
 		o(c)
-	}
-	if c.APIKey == "" {
-		return nil, errors.New("An API Key is required")
 	}
 	return c, nil
 }
