@@ -3,6 +3,8 @@ package pexels
 // Pagination is a common response struct for many endpoints that details how
 // to go to the previous and next pages as well as the total number of results,
 // what page you are on currently and how many results per page.
+//
+//nolint:tagliatelle
 type Pagination struct {
 	TotalResults uint32 `json:"total_results"`
 	Page         uint16 `json:"page"`

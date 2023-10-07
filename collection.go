@@ -1,23 +1,34 @@
 package pexels
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 )
 
+var ErrMissingCollectionID = errors.New("a collection ID must be specified")
+
 // Media is either Photo or Video.
 type Media interface {
-	MediaType() string
+	MediaType() Type
 	isMedia()
 }
 
+type Type interface{ enum() }
+
+type typ string
+
+func (typ) enum() {}
+
 const (
-	videoType = "Video"
-	photoType = "Photo"
+	TypeVideo typ = "Video"
+	TypePhoto typ = "Photo"
 )
 
 // Collection is the base data structure returned when consuming Pexels API
 // Collection endpoints.
+//
+//nolint:tagliatelle
 type Collection struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
@@ -36,7 +47,49 @@ type MediaPayload struct {
 	Pagination
 }
 
-// CollectionPayload is all of the user's Collections
+func (p *MediaPayload) UnmarshalJSON(raw []byte) error {
+	var data struct {
+		ID         string            `json:"id"`
+		Media      []json.RawMessage `json:"media"`
+		Pagination `json:"pagination"`
+	}
+	if err := json.Unmarshal(raw, &data); err != nil {
+		return fmt.Errorf(wrapFmt, err)
+	}
+	ms := make([]Media, 0, len(data.Media))
+	for _, rawMsg := range data.Media {
+		m, err := decodeMediaFrom(rawMsg)
+		if err != nil {
+			return err
+		}
+		ms = append(ms, m)
+	}
+	p.ID = data.ID
+	p.Media = ms
+	p.Pagination = data.Pagination
+	return nil
+}
+
+func decodeMediaFrom(data []byte) (Media, error) {
+	var typeData struct {
+		Type Type `json:"type"`
+	}
+	if err := json.Unmarshal(data, &typeData); err != nil {
+		return nil, fmt.Errorf(wrapFmt, err)
+	}
+	var m Media
+	switch typeData.Type {
+	case TypeVideo:
+		m = &Video{}
+	case TypePhoto:
+		m = &Photo{}
+	default:
+		return nil, ErrUnsupportedType
+	}
+	return m, nil
+}
+
+// CollectionPayload is all of the user's Collections.
 type CollectionPayload struct {
 	ID          string       `json:"id"`
 	Collections []Collection `json:"collections"`
@@ -89,41 +142,41 @@ type CollectionMediaParams struct {
 
 // GetCollection returns all the media based on parameters provided, within a
 // single collection.
-func (c *client) GetCollection(params *CollectionMediaParams) (
-	MediaResponse, error) {
-
+func (c *Client) GetCollection(
+	params *CollectionMediaParams,
+) (MediaResponse, error) {
 	if params == nil || params.ID == "" {
-		return MediaResponse{}, errors.New("Collection ID must be specified")
+		return MediaResponse{}, ErrMissingCollectionID
 	}
-	ID := params.ID
+	id := params.ID
 	params.ID = ""
-	resp, err := c.get(fmt.Sprint("/collections/", ID), params, &MediaPayload{})
+	resp, err := get(*c, fmt.Sprint("/collections/", id), params, &MediaPayload{})
 	if err != nil {
 		return MediaResponse{}, err
 	}
 	cr := MediaResponse{}
-	for _, m := range resp.Data.(MediaPayload).Media {
-		switch m.MediaType() {
-		case photoType:
-			cr.Photos = append(cr.Photos, *m.(*Photo))
-		case videoType:
-			cr.Videos = append(cr.Videos, *m.(*Video))
+	for _, m := range resp.Data.Media {
+		switch v := m.(type) {
+		case *Photo:
+			cr.Photos = append(cr.Photos, *v)
+		case *Video:
+			cr.Videos = append(cr.Videos, *v)
 		}
 	}
-	cr.ID = resp.Data.(MediaPayload).ID
-	cr.Pagination = resp.Data.(MediaPayload).Pagination
+	cr.ID = resp.Data.ID
+	cr.Pagination = resp.Data.Pagination
 	resp.copyCommon(&cr.Common)
 	return cr, nil
 }
 
 // GetCollections returns all of your collections.
-func (c *client) GetCollections() (CollectionsResponse, error) {
-	resp, err := c.get("/collections", "", &CollectionPayload{})
+func (c *Client) GetCollections() (CollectionsResponse, error) {
+	resp, err := get(*c, "/collections", "", &CollectionPayload{})
 	if err != nil {
 		return CollectionsResponse{}, err
 	}
 	csr := CollectionsResponse{}
-	csr.Payload = *resp.Data.(*CollectionPayload)
+	csr.Payload = *resp.Data
 	resp.copyCommon(&csr.Common)
 	return csr, nil
 }

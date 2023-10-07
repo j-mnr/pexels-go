@@ -7,18 +7,18 @@ import (
 
 // ResponseCommon holds the common values found inside of a HTTP response.
 type ResponseCommon struct {
-	StatusCode int         `json:"status_code"`
+	StatusCode int         `json:"status_code"` //nolint:tagliatelle
 	Status     string      `json:"status"`
 	Header     http.Header `json:"headers"`
 }
 
-func (rc *ResponseCommon) convertHeaderToInt(h string) int {
+func (ResponseCommon) convertHeaderToInt(h string) int {
 	i, _ := strconv.Atoi(h)
 	return i
 }
 
 // GetRateLimit returns the total request limit for the monthly period.
-func (rc *ResponseCommon) GetRateLimit() int {
+func (rc ResponseCommon) GetRateLimit() int {
 	return rc.convertHeaderToInt(rc.Header.Get("X-Ratelimit-Limit"))
 }
 
@@ -29,17 +29,17 @@ func (rc *ResponseCommon) GetRateLimitRemaining() int {
 }
 
 // GetRateLimitReset returns a UNIX timestamp of when the current monthly
-// period will roll over
+// period will roll over.
 func (rc *ResponseCommon) GetRateLimitReset() int {
 	return rc.convertHeaderToInt(rc.Header.Get("X-Ratelimit-Reset"))
 }
 
-type response struct {
+type response[T any] struct {
 	Common ResponseCommon
-	Data   interface{}
+	Data   T
 }
 
-func (r *response) copyCommon(rc *ResponseCommon) {
+func (r *response[any]) copyCommon(rc *ResponseCommon) {
 	rc.StatusCode = r.Common.StatusCode
 	rc.Header = r.Common.Header
 	rc.Status = r.Common.Status

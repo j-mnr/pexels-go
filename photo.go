@@ -1,7 +1,6 @@
 package pexels
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -13,6 +12,8 @@ const (
 
 // Photo is the base data structure returned when consuming Pexels API Photo
 // endpoints.
+//
+//nolint:tagliatelle
 type Photo struct {
 	ID              uint64      `json:"id"`
 	Width           uint16      `json:"width"`
@@ -28,11 +29,11 @@ type Photo struct {
 	Liked bool `json:"liked"`
 }
 
-func (p *Photo) isMedia() {}
+func (Photo) isMedia() {}
 
 // MediaType is used to identify which type of Media a resource is.
-// It always returns "Photo"
-func (p *Photo) MediaType() string { return photoType }
+// It always returns "Photo".
+func (Photo) MediaType() Type { return TypePhoto }
 
 // PhotoResponse has a common attributes of an HTTP response and the
 // received Photo.
@@ -77,7 +78,7 @@ type CuratedPhotosParams struct {
 // PhotoSearchParams requires Query. It has all of the available parameters
 // by which you can search for a photo.
 type PhotoSearchParams struct {
-	Query string `query:"query"` // required
+	Query string `query:"query"` // Query is required
 
 	General
 	// the supported pexels colors which you can search with are:
@@ -88,14 +89,14 @@ type PhotoSearchParams struct {
 	PerPage uint8  `query:"per_page,15"` // Max: 80
 }
 
-// GetPhoto retreives a photo by its ID found at the end of its URL
-func (c *client) GetPhoto(photoID uint64) (PhotoResponse, error) {
-	resp, err := c.get(fmt.Sprint(photoEndpoint, photoID), "", &Photo{})
+// GetPhoto retreives a photo by its ID found at the end of its URL.
+func (c *Client) GetPhoto(photoID uint64) (PhotoResponse, error) {
+	resp, err := get(*c, fmt.Sprint(photoEndpoint, photoID), "", &Photo{})
 	if err != nil {
 		return PhotoResponse{}, err
 	}
 	pr := PhotoResponse{}
-	pr.Photo = *resp.Data.(*Photo)
+	pr.Photo = *resp.Data
 	resp.copyCommon(&pr.Common)
 	return pr, nil
 }
@@ -103,34 +104,33 @@ func (c *client) GetPhoto(photoID uint64) (PhotoResponse, error) {
 // GetCuratedPhotos retrieves the current Curated list, updated hourly by
 // Pexels. If nil is passed it will default to the first page and return 15
 // photos.
-func (c *client) GetCuratedPhotos(params *CuratedPhotosParams) (PhotosResponse,
-	error) {
-
-	resp, err := c.get(curatedPhotosEndpoint, params, &PhotoPayload{})
+func (c *Client) GetCuratedPhotos(
+	cpp *CuratedPhotosParams,
+) (PhotosResponse, error) {
+	resp, err := get(*c, curatedPhotosEndpoint, cpp, &PhotoPayload{})
 	if err != nil {
 		return PhotosResponse{}, err
 	}
-	cr := PhotosResponse{}
-	cr.Payload = *resp.Data.(*PhotoPayload)
+	cr := PhotosResponse{Payload: *resp.Data}
 	resp.copyCommon(&cr.Common)
 	return cr, nil
 }
 
-// SearchPhotos returns a slice of Photos 15 photos by defualt.
+// SearchPhotos returns a slice of Photos 15 photos by default.
 // The PhotoSearchParams.Query is required and SearchPhotos will return an
 // error if it is nil.
-func (c *client) SearchPhotos(params *PhotoSearchParams) (PhotosResponse,
-	error) {
-
-	if params == nil || params.Query == "" {
-		return PhotosResponse{}, errors.New("Query is required")
+func (c *Client) SearchPhotos(
+	psp *PhotoSearchParams,
+) (PhotosResponse, error) {
+	if psp == nil || psp.Query == "" {
+		return PhotosResponse{}, ErrMissingQuery
 	}
-	resp, err := c.get(searchPhotosEndpoint, params, &PhotoPayload{})
+	resp, err := get(*c, searchPhotosEndpoint, psp, &PhotoPayload{})
 	if err != nil {
 		return PhotosResponse{}, err
 	}
 	psr := PhotosResponse{}
-	psr.Payload = *resp.Data.(*PhotoPayload)
+	psr.Payload = *resp.Data
 	resp.copyCommon(&psr.Common)
 	return psr, nil
 }

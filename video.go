@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+var ErrMissingQuery = errors.New("query is required")
+
 const (
 	videoEndpoint         = "/videos/videos/"
 	popularVideosEndpoint = "/videos/popular"
@@ -13,6 +15,8 @@ const (
 
 // Video is the base data structure returned when consuming Pexels API Video
 // endpoints.
+//
+//nolint:tagliatelle
 type Video struct {
 	ID            uint64         `json:"id"`
 	Width         uint16         `json:"width"`
@@ -26,11 +30,11 @@ type Video struct {
 	Type          string         `json:"type,omitempty"`
 }
 
-func (v *Video) isMedia() {}
+func (Video) isMedia() {}
 
 // MediaType is used to identify which type of Media a resource is.
-// It always returns "Video"
-func (v *Video) MediaType() string { return videoType }
+// It always returns "Video".
+func (Video) MediaType() Type { return TypeVideo }
 
 // VideoResponse has a common attributes of an HTTP response and the
 // received video.
@@ -49,8 +53,8 @@ type PexelUser struct {
 // VideoFile is a version of a Video.
 type VideoFile struct {
 	ID       uint64 `json:"id"`
-	Quality  string `json:"quality"` // supported qualities are: sd, hd.
-	FileType string `json:"file_type"`
+	Quality  string `json:"quality"`   // supported qualities are: sd, hd.
+	FileType string `json:"file_type"` //nolint:tagliatelle
 	Width    uint16 `json:"width"`
 	Height   uint16 `json:"height"`
 	Link     string `json:"link"`
@@ -76,7 +80,7 @@ type VideosResponse struct {
 	Payload VideoPayload
 }
 
-// PopularVideoParams is paramaters that can be selected for when searching for
+// PopularVideoParams is parameters that can be selected for when searching for
 // specific popular videos on pexels.
 type PopularVideoParams struct {
 	MinWidth    uint16 `query:"min_width"`
@@ -90,7 +94,8 @@ type PopularVideoParams struct {
 // VideoSearchParams requires Query. A Query allows you to search for any topic
 // that you would like to receive video information about.
 type VideoSearchParams struct {
-	Query string `query:"query"` // required
+	// Query is required
+	Query string `query:"query"`
 
 	General
 	Page    uint16 `query:"page,1"`
@@ -100,42 +105,42 @@ type VideoSearchParams struct {
 // GetVideo returns a Video based on its ID. It does not return an error if the
 // Video could not be found by its ID, only if something went wrong while
 // getting the resource.
-func (c *client) GetVideo(videoID uint64) (VideoResponse, error) {
-	resp, err := c.get(fmt.Sprint(videoEndpoint, videoID), "", &Video{})
+func (c *Client) GetVideo(videoID uint64) (VideoResponse, error) {
+	resp, err := get(*c, fmt.Sprint(videoEndpoint, videoID), "", &Video{})
 	if err != nil {
 		return VideoResponse{}, err
 	}
-	vr := VideoResponse{Video: *resp.Data.(*Video)}
+	vr := VideoResponse{Video: *resp.Data}
 	resp.copyCommon(&vr.Common)
 	return vr, nil
 }
 
 // GetPopularVideos returns the current popular pexels videos.
-func (c *client) GetPopularVideos(params *PopularVideoParams) (VideosResponse,
-	error) {
-
-	resp, err := c.get(popularVideosEndpoint, params, &VideoPayload{})
+func (c *Client) GetPopularVideos(
+	pvp *PopularVideoParams,
+) (VideosResponse, error) {
+	resp, err := get(*c, popularVideosEndpoint, pvp, &VideoPayload{})
 	if err != nil {
 		return VideosResponse{}, err
 	}
-	popResp := VideosResponse{Payload: *resp.Data.(*VideoPayload)}
+	popResp := VideosResponse{Payload: *resp.Data}
 	resp.copyCommon(&popResp.Common)
 	return popResp, nil
 }
 
 // SearchVideos enables you to search the entire pexels database for any
 // subject that you would like and receive videos on that subject.
-func (c *client) SearchVideos(params *VideoSearchParams) (VideosResponse,
-	error) {
-
-	if params == nil || params.Query == "" {
-		return VideosResponse{}, errors.New("Query is required")
+func (c *Client) SearchVideos(
+	vsp *VideoSearchParams,
+) (VideosResponse, error) {
+	if vsp == nil || vsp.Query == "" {
+		return VideosResponse{}, ErrMissingQuery
 	}
-	resp, err := c.get(searchVideosEndpoint, params, &VideoPayload{})
+	resp, err := get(*c, searchVideosEndpoint, vsp, &VideoPayload{})
 	if err != nil {
 		return VideosResponse{}, err
 	}
-	vsr := VideosResponse{Payload: *resp.Data.(*VideoPayload)}
+	vsr := VideosResponse{Payload: *resp.Data}
 	resp.copyCommon(&vsr.Common)
 	return vsr, nil
 }
