@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 )
 
 var (
@@ -17,10 +18,10 @@ var (
 const (
 	// BaseURL is the Pexels API starting point URL for all Media.
 	BaseURL = "https://api.pexels.com/"
-	// PhotoBaseURL is used to access both Photos and Collections.
-	PhotoBaseURL = BaseURL + "v1"
-	// VideoBaseURL is used to access Videos.
-	VideoBaseURL = BaseURL + "videos"
+	// RootPhotoURL is used to access both Photos and Collections.
+	RootPhotoURL = BaseURL + "v1"
+	// RootVideoURL is used to access Videos.
+	RootVideoURL = BaseURL + "videos"
 
 	wrapFmt = "pexels: %w"
 )
@@ -33,12 +34,12 @@ type HTTPClient interface {
 // Client is the Pexels API Client that allows you to interact with the Pexels
 // endpoints for photos, videos, and collections.
 type Client struct {
-	APIKey string // required
+	apiKey string
 
-	HTTPClient HTTPClient
+	client HTTPClient
 
-	PhotoBaseURL string // Pre-set with pexels.New
-	VideoBaseURL string // Pre-set with pexels.New
+	RootPhotoURL string
+	RootVideoURL string
 }
 
 // New returns a Pexels API client with the provided API key. If the API key is
@@ -48,10 +49,10 @@ func New(apiKey string, opts ...Option) (*Client, error) {
 		return nil, ErrMissingAPIKey
 	}
 	c := &Client{
-		APIKey:       apiKey,
-		HTTPClient:   http.DefaultClient,
-		PhotoBaseURL: PhotoBaseURL,
-		VideoBaseURL: VideoBaseURL,
+		apiKey:    apiKey,
+		client:    &http.Client{Timeout: time.Second},
+		RootPhotoURL: RootPhotoURL,
+		RootVideoURL: RootVideoURL,
 	}
 	for _, o := range opts {
 		o(c)
@@ -63,19 +64,8 @@ func New(apiKey string, opts ...Option) (*Client, error) {
 // All Option function names start with `With`.
 type Option func(*Client)
 
-// WithHTTPClient ...
-func WithHTTPClient(httpC HTTPClient) Option {
-	return func(c *Client) { c.HTTPClient = httpC }
-}
-
-// WithPhotoBaseURL ...
-func WithPhotoBaseURL(url string) Option {
-	return func(c *Client) { c.PhotoBaseURL = url }
-}
-
-// WithVideoBaseURL ...
-func WithVideoBaseURL(url string) Option {
-	return func(c *Client) { c.VideoBaseURL = url }
+func WithHTTPClient(c HTTPClient) Option {
+	return func(cl *Client) { cl.client = c }
 }
 
 func get[T any](
@@ -94,8 +84,8 @@ func get[T any](
 }
 
 func doRequest[T any](c Client, req *http.Request, resp *response[T]) error {
-	setRequestHeaders(req, c.APIKey)
-	httpResp, err := c.HTTPClient.Do(req)
+	setRequestHeaders(req, c.apiKey)
+	httpResp, err := c.client.Do(req)
 	if err != nil {
 		return fmt.Errorf(wrapFmt, err)
 	}
@@ -111,9 +101,9 @@ func doRequest[T any](c Client, req *http.Request, resp *response[T]) error {
 }
 
 func (c *Client) newRequest(path string, data any) (*http.Request, error) {
-	url := c.PhotoBaseURL + path
+	url := c.RootPhotoURL + path
 	if strings.HasPrefix(path, "/videos") {
-		url = c.VideoBaseURL + path
+		url = c.RootVideoURL + path
 	}
 	req, err := http.NewRequest(http.MethodGet, url, nil) //nolint:noctx
 	if err != nil {
